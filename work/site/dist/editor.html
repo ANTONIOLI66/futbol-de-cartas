@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071827"><title>Editor 2026–27 · Fútbol de Cartas</title><link rel="stylesheet" href="editor.css"></head>
+<body><main class="app">
+<header><a href="./" id="back">← Volver al juego</a><span class="eyebrow">FÚTBOL DE CARTAS / EDITOR</span><h1>Una nueva temporada.<br><span>Tu propia base de jugadores.</span></h1><p>2026–27 · Independiente de la base del juego. Pega una ficha PES 6, revisa sus valores y crea tus equipos.</p></header>
+<section class="toolbar"><button id="import">Importar JSON</button><button id="export">Exportar JSON</button><button id="use" class="primary">Usar esta base en el juego</button><button id="exportBackup" hidden>Exportar base anterior</button><input id="jsonFile" type="file" accept=".json,application/json" hidden></section>
+<p class="notice">Guardado local en este navegador, sin sincronización entre dispositivos. Exporta el JSON como copia de seguridad y para llevarlo al móvil o al ordenador.</p>
+<p id="status" role="status" aria-live="polite">Abriendo el editor…</p>
+<div class="layout"><aside class="panel">
+<div class="section-title"><h2>Equipos</h2><button id="addTeam">+ Crear</button></div>
+<div id="teams"></div>
+<form id="teamForm" hidden><label>Nombre del equipo<input id="teamName" required maxlength="100" placeholder="Ej. Valencia CF"></label><label>Escudo (JPG, PNG o WebP)<input id="badgeFile" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="clearBadge" type="button">Quitar escudo</button><div class="row"><button class="primary">Guardar equipo</button><button id="deleteTeam" class="danger" type="button">Eliminar</button></div></form>
+<div class="section-title"><h2>Plantilla</h2><span id="count">0 / 10</span></div>
+<div class="row"><button id="addPlayer">+ Jugador</button><button id="addKeeper">+ Portero</button></div><div id="roster"></div>
+</aside><section class="panel workspace">
+<div id="empty"><div class="empty-icon">⚽</div><h2>El inicio de la 2026–27</h2><p>Esta base empieza vacía. Crea tu primer equipo y añade jugadores pegando sus fichas PES o introduciendo los valores a mano.</p><button id="firstTeam" class="primary">Crear primer equipo</button></div>
+<form id="personForm" hidden>
+<div class="section-title"><div><span class="eyebrow" id="personType">JUGADOR DE CAMPO</span><h2 id="formTitle">Nueva carta</h2></div><button id="cancel" type="button">Cancelar</button></div>
+<label>Ficha PES 6<textarea id="pesText" rows="7" placeholder="Name: José Luis Gayà Peña&#10;Speed: 79&#10;Acceleration: 79&#10;… Pega aquí la ficha completa"></textarea></label>
+<div class="row"><button id="convert" type="button" class="primary">Convertir y previsualizar</button><span class="muted">No guarda la carta todavía.</span></div>
+<p id="conversionStatus" role="status"></p>
+<label id="roleLabel">Posición principal<select id="personRole" style="display:block;width:100%;padding:11px;border-radius:10px;background:#081d2b;color:#fff;border:1px solid #2b4657"><option value="">Selecciona una posición</option><option value="DEF">DEF · Defensa</option><option value="MED">MED · Centrocampista</option><option value="DEL">DEL · Delantero</option></select><small>Modo táctico: +1 en su zona. Requiere 4 defensas, 3 medios y 3 delanteros al completar el equipo. La propuesta PES se puede corregir.</small></label>
+<div class="card-editor"><div class="portrait"><img id="photoPreview" alt="Foto del jugador" hidden><span id="photoPlaceholder">⚽</span><div><strong id="previewName">Nueva carta</strong><small>2026–27</small></div></div><div class="details"><label>Nombre<input id="personName" required maxlength="100"></label><div id="stats" class="stats"></div></div></div>
+<label>Foto (JPG, PNG o WebP)<input id="photoFile" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="clearPhoto" type="button">Quitar foto</button>
+<details><summary>Cómo se hace la conversión</summary><p>Propuesta editable, no una equivalencia oficial de PES. Se calcula la media de los atributos indicados y se convierte a 1–10, redondeando.</p><p>Escala: 40 o menos → 1 · 50 → 2 · 60 → 3 · 70 → 5 · 80 → 7 · 90 → 9 · 95 o más → 10. Entre esos puntos se interpola.</p><div id="recipes"></div><p>Las habilidades especiales y la ficha original se conservan en el JSON; no añaden bonificaciones al juego.</p></details>
+<div class="save-row"><button class="primary" id="savePerson">Guardar carta</button><button id="deletePerson" class="danger" type="button" hidden>Eliminar carta</button><span id="formSave" class="muted"></span></div>
+</form></section></div></main><script src="tactical-rules.js"></script><script type="module" src="editor.mjs"></script></body></html>

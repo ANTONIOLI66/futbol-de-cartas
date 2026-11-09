@@ -1,0 +1,12 @@
+{
+  "name": "futbol-de-cartas",
+  "private": true,
+  "description": "Solo para QA local. El juego no necesita npm para ejecutarse: dist/ es estático.",
+  "scripts": {
+    "serve": "node editor-preview.cjs",
+    "test": "node run-checks.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

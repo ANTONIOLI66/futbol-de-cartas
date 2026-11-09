@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({channel:'chrome',headless:true}),page=await browser.newPage({viewport:{width:412,height:915},isMobile:true,hasTouch:true});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.emulateMedia({reducedMotion:'reduce'});await page.goto('http://127.0.0.1:4173');await page.locator('#startMatchBtn').click();
+ const photo='data:image/jpeg;base64,'+fs.readFileSync(path.join(__dirname,'test-fixtures/player-120.jpg')).toString('base64');
+ await page.evaluate(photo=>{state.homeCards.forEach((p,i)=>{p.photo_data=photo;p.ritmo=i<2?9:i-1;p.name='Jugador '+i;});state.awayCards.forEach(p=>p.photo_data=photo);state.keeperA.photo_data=photo;state.keeperB.photo_data=photo;state.ball=6;state.turn='A';state.shotMode=false;state.usedHome=[];currentCenterStat='ritmo';BOARD=buildBoard('ritmo');renderAll();},photo);
+ await page.waitForFunction(()=>document.querySelector('#myCards .player-img').classList.contains('low-res'));
+ const expected=await page.evaluate(()=>[...state.homeCards].sort((a,b)=>b.ritmo-a.ritmo).map(c=>c.name));assert.deepEqual(await page.locator('#myCards .name-overlay .primary').allTextContents(),expected);assert.equal(await page.locator('#myCards .top-value').count(),2);assert.equal(await page.locator('#myCards .stat.best').count(),2);
+ for(const stat of await page.locator('#myCards .card').first().locator('.stat').all())assert(await stat.isVisible());assert.equal(await page.locator('#myCards .card').first().locator('.stat').count(),6);
+ const originalOrder=await page.evaluate(()=>state.homeCards.map(c=>c.id));await page.locator('#myCards .card').first().click();assert.equal(await page.evaluate(()=>getSelectedCard().name),expected[0]);assert.deepEqual(await page.evaluate(()=>state.homeCards.map(c=>c.id)),originalOrder);
+ await page.waitForFunction(()=>document.querySelector('#desktopBattleArena img')?.classList.contains('low-res'));for(const img of await page.locator('#desktopBattleArena img').all()){const dim=await img.evaluate(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height,nw:e.naturalWidth,nh:e.naturalHeight}));assert(dim.w<=dim.nw&&dim.h<=dim.nh,'small portrait should not upscale');}
+ await page.screenshot({path:path.join(__dirname,'outputs/cards-mobile-v9.png'),fullPage:true});
+ await page.evaluate(()=>{document.querySelector('#myCards').scrollLeft=300;renderAll();});assert((await page.locator('#myCards').evaluate(e=>e.scrollLeft))>200,'same turn retains carousel scroll');
+ await page.evaluate(()=>{state.ball=4;renderAll();});assert((await page.locator('#myCards').evaluate(e=>e.scrollLeft))<=4,'new attribute starts at strongest card (including snap padding)');
+ for(const stat of ['ritmo','fisico','defensa','regate','pase','tiro']){
+  await page.evaluate(stat=>{state.ball=6;state.shotMode=stat==='tiro';state.shotAttacker='A';currentCenterStat=stat;BOARD=buildBoard(stat);state.usedHome=[state.homeCards[0].id];state.selectedCardId=null;renderAll();},stat);
+  const values=await page.evaluate(stat=>[...document.querySelectorAll('#myCards .name-overlay .primary')].map(e=>state.homeCards.find(c=>c.name===e.textContent)[stat]),stat);assert.deepEqual(values,[...values].sort((a,b)=>b-a));const max=Math.max(...values);assert.equal(await page.locator('#myCards .top-value').count(),values.filter(v=>v===max).length);assert.equal(await page.locator('#myCards .stat.best').count(),values.filter(v=>v===max).length);
+ }
+ await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>{state.shotMode=false;state.ball=6;state.usedHome=[];currentCenterStat='ritmo';BOARD=buildBoard('ritmo');selectCard(state.homeCards[0].id);renderAll();});await page.waitForFunction(()=>document.querySelector('#myCards img').classList.contains('low-res'));await page.screenshot({path:path.join(__dirname,'outputs/cards-desktop-v9.png'),fullPage:true});
+ for(const width of [320,360,412]){await page.setViewportSize({width,height:915});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no page overflow '+width);}
+ assert.deepEqual(errors,[]);console.log('PASS all six attributes visible, sorting across attributes and shots, tied maxima, used cards excluded, selection identity, carousel reset/preservation, native-size photos, mobile and desktop');await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});

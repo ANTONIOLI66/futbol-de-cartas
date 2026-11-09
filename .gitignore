@@ -1,0 +1,7 @@
+# Capturas generadas por las pruebas
+outputs/
+node_modules/
+
+# Documentos privados del traspaso: se quedan solo en local
+CONTEXTO-TRASPASO-*.txt
+work/site/.openai/

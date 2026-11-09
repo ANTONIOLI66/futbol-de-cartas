@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#071827">
+<meta name="description" content="Juego de fútbol por cartas adaptado para móvil y ordenador.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23071827'/%3E%3Cpath d='M10 12h44v40H10z' fill='%2310714b' stroke='%23fff' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='9' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M32 12v40M10 32h44' stroke='%23fff' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23fff'/%3E%3C/svg%3E">
+<title>Fútbol de Cartas</title>
+<link rel="stylesheet" href="tactical.css">
+<style>
+:root{
+  --bg1:#18314e;
+  --bg2:#0f172a;
+  --panel:#ffffff;
+  --line:#d9e2ec;
+  --text:#132131;
+  --muted:#5f7083;
+  --home:#1d63d6;
+  --away:#c03968;
+  --good:#0f8a46;
+  --bad:#c62828;
+  --warn:#9a6a00;
+  --tab:#eaf2ff;
+  --tabText:#27507d;
+  --tabActive1:#0ea5ff;
+  --tabActive2:#0f62d8;
+  --soft:0 10px 24px rgba(0,0,0,.10);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--text);
+  background:linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 100%);
+  min-height:100vh;
+  min-height:100dvh;
+  overscroll-behavior:none;
+}
+button,input,select{font:inherit}
+button,select{min-height:44px;touch-action:manipulation}
+.hidden{display:none !important}
+
+.app{
+  width:100%;
+  max-width:520px;
+  margin:0 auto;
+  min-height:100dvh;
+  padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+}
+.panel,.content{
+  background:var(--panel);
+  border:1px solid rgba(255,255,255,.7);
+  border-radius:18px;
+  box-shadow:var(--soft);
+}
+.panel{padding:12px}
+.content{padding:10px}
+
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{
+  border:none;
+  border-radius:14px;
+  padding:11px 14px;
+  font-weight:900;
+  cursor:pointer;
+  color:#fff;
+  background:linear-gradient(135deg,#0ea5ff,#0f62d8);
+}
+.btn.secondary{
+  background:linear-gradient(135deg,#edf4ff,#dfeeff);
+  color:#174a99;
+  border:1px solid #cfe0ff;
+}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.setup-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:12px;
+}
+.cardbox{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:12px;
+  background:#f9fcff;
+}
+.badge-wrap{
+  width:64px;height:64px;border-radius:16px;overflow:hidden;
+  background:#eef5ff;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+}
+.badge-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+select{
+  width:100%;padding:10px;border:1px solid var(--line);
+  border-radius:10px;background:#fff;
+}
+.small-muted{font-size:12px;color:var(--muted)}
+
+#gamePanel{
+  height:calc(100dvh - 16px);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+#gamePanel .sticky-top{
+  position:sticky;
+  top:0;
+  z-index:20;
+  flex:0 0 auto;
+}
+#gamePanel .content{
+  flex:1 1 auto;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  margin-top:0;
+}
+
+.score-top{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  gap:8px;
+  align-items:center;
+  text-align:center;
+}
+.teambox{
+  border-radius:14px;
+  color:#fff;
+  padding:10px 8px;
+  font-weight:700;
+}
+.teambox.home{background:linear-gradient(135deg,#1554bf,#4f95ff)}
+.teambox.away{background:linear-gradient(135deg,#992454,#df689c)}
+.teamname{font-size:12px;opacity:.95;margin-bottom:4px}
+.score{font-size:32px;font-weight:900;line-height:1}
+
+.centerbox{
+  min-width:110px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#f7fbff;
+  padding:8px;
+  font-weight:900;
+}
+.centerbox .time{font-size:13px;margin-bottom:4px}
+.centerbox .turn{font-size:11px;color:var(--muted);margin-top:4px}
+.dicebox{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid #d6e7ff;background:#fff;border-radius:10px;padding:6px;
+}
+.dice{font-size:24px;display:inline-block}
+.roll{animation:roll .45s ease}
+@keyframes roll{
+  0%{transform:rotate(0) scale(1)}
+  25%{transform:rotate(90deg) scale(1.08)}
+  50%{transform:rotate(180deg) scale(1)}
+  75%{transform:rotate(270deg) scale(1.08)}
+  100%{transform:rotate(360deg) scale(1)}
+}
+
+.statusline{
+  margin-top:10px;
+  border-radius:12px;
+  background:#eef6ff;
+  border:1px solid #d5e7ff;
+  padding:10px;
+}
+.statusline .action{
+  font-weight:900;
+  color:#234a77;
+  margin-bottom:6px;
+  font-size:14px;
+  line-height:1.25;
+}
+.statusline .summary{
+  font-size:13px;
+  line-height:1.45;
+}
+
+#miniField{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:4px;
+  margin-top:10px;
+}
+.mini-cell{
+  font-size:10px;
+  padding:6px 2px;
+  text-align:center;
+  border-radius:8px;
+  background:#eef6ff;
+  border:1px solid #d5e7ff;
+  line-height:1.15;
+}
+.mini-cell .sub{
+  display:block;
+  margin-top:2px;
+  font-size:9px;
+  opacity:.9;
+}
+.mini-cell.active{
+  background:#0ea5ff;
+  color:#fff;
+  font-weight:700;
+}
+.mini-cell.shoot{background:#fff3cd}
+
+.tabs{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  margin-top:10px;
+}
+.tab{
+  border:none;
+  border-radius:12px;
+  padding:10px 8px;
+  background:var(--tab);
+  color:var(--tabText);
+  font-weight:900;
+  cursor:pointer;
+  font-size:13px;
+}
+.tab.active{
+  background:linear-gradient(135deg,var(--tabActive1),var(--tabActive2));
+  color:#fff;
+}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+.meta{
+  display:grid;
+  gap:6px;
+  margin-bottom:10px;
+  color:var(--muted);
+  font-size:13px;
+}
+.strong{font-weight:900;color:var(--text)}
+
+.cards-grid,.list{display:grid;gap:10px}
+
+/* Cartas horizontales */
+.card{
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 10px 22px rgba(15,23,42,.12);
+  overflow:hidden;
+  cursor:pointer;
+}
+.card.selected{outline:3px solid #0ea5ff;transform:translateY(-1px)}
+.card-head{display:none}
+
+.horizontal-card{
+  display:grid;
+  grid-template-columns:42% 58%;
+  min-height:188px;
+}
+.horizontal-card .player-art{
+  min-height:188px;
+  height:100%;
+  position:relative;
+  border-right:1px solid #dce8f6;
+  background:linear-gradient(180deg,#eef5ff,#dde9ff);
+}
+.horizontal-card.readonly .player-art{
+  background:linear-gradient(180deg,#f8fafc,#e5e7eb);
+}
+.horizontal-card .player-photo{
+  width:100%;
+  height:100%;
+  display:block;
+  background:linear-gradient(135deg,#9ec5ff,#4f95ff);
+  color:#fff;
+  font-size:64px;
+  font-weight:900;
+  overflow:hidden;
+  line-height:188px;
+  text-align:center;
+}
+.horizontal-card.readonly .player-photo{
+  background:linear-gradient(135deg,#cbd5e1,#94a3b8);
+}
+.player-img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+.name-overlay{
+  position:absolute;
+  left:0;right:0;bottom:0;
+  background:linear-gradient(180deg,rgba(15,23,42,0) 0%, rgba(15,23,42,.72) 45%, rgba(15,23,42,.88) 100%);
+  color:#fff;
+  padding:14px 10px 10px;
+  text-align:left;
+}
+.name-overlay .primary{
+  font-size:17px;
+  font-weight:900;
+  line-height:1.1;
+  text-shadow:0 1px 3px rgba(0,0,0,.35);
+}
+.name-overlay .secondary{
+  font-size:11px;
+  opacity:.92;
+  margin-top:4px;
+}
+.horizontal-card .card-body{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:10px 10px 10px 12px;
+}
+.stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+.stat{
+  border:1px solid #e7eef7;
+  background:#fbfdff;
+  border-radius:12px;
+  padding:7px 8px;
+  font-size:12px;
+  font-weight:700;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+.stat.best{
+  background:#e8fff0;
+  border-color:#86efac;
+  color:#166534;
+}
+.card.top-value{border-color:#65c98b;box-shadow:0 0 0 1px #65c98b55}
+.horizontal-card .player-photo img.player-img.low-res{
+  inset:auto;top:6px;left:50%;transform:translateX(-50%);
+  width:min(100%,var(--photo-native-width,120px));height:min(calc(100% - 12px),var(--photo-native-height,120px));
+  object-fit:contain;object-position:center;border-radius:7px;background:#fff;
+}
+.play-inline{
+  width:100%;
+  margin-top:10px;
+  padding:12px 12px;
+  border:none;
+  border-radius:14px;
+  font-weight:900;
+  cursor:pointer;
+  background:linear-gradient(135deg,#0ea5ff,#0f62d8);
+  color:#fff;
+}
+.play-inline.selected{background:linear-gradient(135deg,#16a34a,#15803d)}
+.play-inline:disabled{opacity:.55;cursor:not-allowed}
+
+.list-item{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px;
+  background:#f9fcff;
+  font-size:13px;
+  line-height:1.55;
+}
+.result-home{color:var(--good);font-weight:900}
+.result-away{color:var(--bad);font-weight:900}
+.result-neutral{color:var(--warn);font-weight:900}
+
+@media (max-width:420px){
+  .app{padding:6px}
+  #gamePanel{height:calc(100dvh - 12px)}
+  .setup-grid{grid-template-columns:1fr}
+  .score{font-size:28px}
+  .centerbox{min-width:102px;padding:7px}
+  #miniField{gap:3px}
+  .mini-cell{font-size:9px;padding:5px 2px}
+  .mini-cell .sub{font-size:8px}
+  .horizontal-card{
+    grid-template-columns:42% 58%;
+    min-height:176px;
+  }
+  .horizontal-card .player-art{min-height:176px}
+  .horizontal-card .player-photo{line-height:176px;font-size:56px}
+  .name-overlay .primary{font-size:15px}
+  .stat{font-size:11px;padding:6px 7px}
+}
+
+@media (min-width:900px){
+  .app{max-width:1440px;padding:18px}
+  #setupPanel{max-width:980px;margin:4vh auto 0;padding:22px}
+  #gamePanel{height:calc(100dvh - 36px);display:grid;grid-template-columns:minmax(540px,.82fr) minmax(0,1.18fr);gap:14px}
+  #gamePanel.hidden{display:none !important}
+  #gamePanel .sticky-top{position:relative;top:auto;height:100%;overflow:auto;padding:16px}
+  #gamePanel .content{height:100%;padding:16px;margin:0}
+  .score-top{margin-top:8px}
+  #miniField{margin-top:18px;min-height:104px}
+  .mini-cell{font-size:11px;padding:12px 4px}
+  .tabs{margin-top:18px}
+  .cards-grid,.list{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .horizontal-card{min-height:196px}
+  .horizontal-card .player-art{min-height:196px}
+  .horizontal-card .player-photo{line-height:196px}
+}
+
+/* Ajuste para que la foto rellene por completo el marco sin dejar gris */
+.horizontal-card .player-photo{
+  position:relative;
+  overflow:hidden;
+  line-height:normal !important;
+}
+.horizontal-card .player-photo .player-img,
+.horizontal-card .player-photo img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 20%;
+  display:block;
+}
+
+/* Rediseño de retransmisión deportiva */
+#gamePanel .sticky-top{
+  color:#f3f9fc;
+  border-color:rgba(255,255,255,.1);
+  background:
+    radial-gradient(circle at 18% 0%,rgba(36,169,255,.18),transparent 38%),
+    linear-gradient(155deg,#102a3b 0%,#071722 72%);
+  box-shadow:0 18px 42px rgba(0,0,0,.28);
+}
+#gamePanel .top-actions .btn.secondary{
+  color:#dff3ff;
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.14);
+  backdrop-filter:blur(8px);
+}
+.score-top{gap:6px}
+.teambox{
+  min-width:0;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 8px 20px rgba(0,0,0,.2);
+}
+.teambox.home{background:linear-gradient(145deg,#1359c8,#278cf0)}
+.teambox.away{background:linear-gradient(145deg,#9f2458,#d8487e)}
+.team-identity{display:flex;align-items:center;gap:7px;min-width:0}
+.teambox.away .team-identity{flex-direction:row-reverse}
+.score-badge{
+  width:32px;height:32px;flex:0 0 32px;border-radius:9px;overflow:hidden;
+  display:grid;place-items:center;background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.2);font-size:13px;font-weight:900;
+}
+.score-badge img{width:100%;height:100%;object-fit:cover;display:block}
+.team-copy{min-width:0;flex:1}
+.teamname{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.score{font-size:30px;margin-top:2px}
+.centerbox{
+  min-width:102px;color:#f5fbff;background:rgba(1,14,23,.54);
+  border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.centerbox .time{color:#ffd65a}
+.centerbox .turn{color:#a8c0cf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:112px}
+.dicebox{color:#f4f9fc;background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}
+.statusline{
+  background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.11);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.statusline .action{color:#f5fbff}
+.statusline .summary{color:#b5cad6}
+
+#miniField{
+  position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(13,minmax(0,1fr));
+  align-items:end;gap:2px;min-height:112px;margin-top:10px;padding:39px 9px 12px;
+  overflow:hidden;border-radius:17px;
+  background:repeating-linear-gradient(90deg,#0e7b4f 0,#0e7b4f 46px,#0c7048 46px,#0c7048 92px);
+  border:1px solid rgba(255,255,255,.2);box-shadow:inset 0 0 30px rgba(0,0,0,.18),0 10px 24px rgba(0,0,0,.16);
+}
+#miniField:before{
+  content:"";position:absolute;z-index:-1;inset:9px;border:2px solid rgba(255,255,255,.48);border-radius:7px;
+  background:linear-gradient(90deg,transparent calc(50% - 1px),rgba(255,255,255,.48) calc(50% - 1px),rgba(255,255,255,.48) calc(50% + 1px),transparent calc(50% + 1px));
+}
+#miniField:after{
+  content:"";position:absolute;z-index:-1;left:50%;top:12px;width:58px;height:58px;
+  transform:translateX(-50%);border:2px solid rgba(255,255,255,.48);border-radius:50%;
+}
+.field-caption{
+  position:absolute;left:16px;top:14px;padding:6px 9px;border-radius:9px;
+  color:#e9f8ef;background:rgba(2,23,18,.64);font-size:10px;font-weight:900;letter-spacing:.04em;
+  backdrop-filter:blur(6px);
+}
+.mini-cell{
+  position:relative;z-index:2;width:22px;height:22px;margin:auto;padding:0;border-radius:50%;
+  display:grid;place-items:center;color:#eafff2;background:#185f47;border:2px solid rgba(255,255,255,.62);
+  font-size:0;line-height:1;box-shadow:0 3px 8px rgba(0,0,0,.18);
+}
+.mini-cell .sub{display:none}
+.mini-cell .cell-code{font-size:7px;font-weight:900}
+.mini-cell.active{
+  width:34px;height:34px;color:#17350b;background:#c8f35d;border:3px solid #fff;
+  box-shadow:0 0 0 5px rgba(200,243,93,.2),0 0 20px rgba(200,243,93,.74);
+  transform:translateY(5px);
+}
+.mini-cell.active .cell-code{font-size:13px}
+.mini-cell.shoot{color:#593d00;background:#ffd867;border-color:#fff1b9}
+.mini-cell.shoot.active{background:#ffec7a}
+
+.battle-arena{
+  margin-bottom:12px;padding:13px;border-radius:18px;color:#eff8fc;
+  background:linear-gradient(145deg,#15354a,#091d2b);border:1px solid rgba(29,120,171,.34);
+  box-shadow:0 14px 30px rgba(10,34,48,.18);
+}
+.battle-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.battle-title strong{font-size:14px}.battle-title span{color:#c8f35d;font-size:11px;font-weight:900;letter-spacing:.06em}
+.battle-empty{padding:16px 8px;text-align:center;color:#9db7c6;font-size:13px}
+.battle-versus{display:grid;grid-template-columns:minmax(0,1fr) 50px minmax(0,1fr);gap:7px;align-items:stretch}
+.battle-side{
+  position:relative;overflow:hidden;min-height:150px;padding:0;border-radius:15px;
+  background:linear-gradient(155deg,rgba(39,140,240,.28),rgba(7,25,37,.96));
+  border:1px solid rgba(64,170,255,.42);
+}
+.battle-side.away{background:linear-gradient(155deg,rgba(216,72,126,.27),rgba(7,25,37,.96));border-color:rgba(234,83,140,.4)}
+.battle-side:after{
+  content:"";position:absolute;z-index:1;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(3,15,25,.02) 28%,rgba(3,15,25,.18) 52%,rgba(3,15,25,.95) 100%);
+}
+.battle-photo{position:absolute;inset:0;overflow:hidden;display:grid;place-items:center;background:rgba(255,255,255,.09);font-size:52px}
+.battle-photo img{width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block}
+.battle-photo img.low-res{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:min(calc(100% - 16px),var(--photo-native-width,120px));height:min(120px,var(--photo-native-height,120px));object-fit:contain;object-position:center;background:#fff;border-radius:9px}
+.battle-name{position:absolute;z-index:2;left:10px;right:48px;bottom:29px;font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 7px rgba(0,0,0,.9)}
+.battle-formula{position:absolute;z-index:2;left:10px;right:48px;bottom:10px;color:#d5e4ec;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 6px rgba(0,0,0,.9)}
+.battle-total{position:absolute;z-index:3;right:9px;bottom:7px;font-size:30px;font-weight:900;color:#4db6ff;text-shadow:0 2px 8px rgba(0,0,0,.95)}
+.battle-side.away .battle-total{color:#ff679d}
+.battle-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.battle-die{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:#f6fbff;color:#102334;font-size:22px;box-shadow:0 7px 16px rgba(0,0,0,.24)}
+.battle-vs{color:#ffd65a;font-size:11px;font-weight:900}
+.battle-result{display:flex;justify-content:space-between;gap:8px;margin-top:10px;padding:9px 10px;border-radius:12px;background:rgba(200,243,93,.1);font-size:12px}
+.battle-result strong{color:#c8f35d}
+.battle-result.away strong{color:#ff7ba9}
+.battle-result.neutral strong{color:#ffd65a}
+.desktop-battle-arena{display:none}
+.tabs{margin-top:9px}
+.tab{background:rgba(255,255,255,.08);color:#bcd2df;border:1px solid rgba(255,255,255,.08)}
+.tab.active{background:linear-gradient(135deg,#168fe2,#1266c7);color:#fff}
+
+@media(max-width:420px){
+  #miniField{min-height:104px;padding-left:6px;padding-right:6px}
+  .mini-cell{width:19px;height:19px}
+  .mini-cell.active{width:31px;height:31px}
+  .battle-arena{padding:11px}
+  .battle-side{min-height:136px}
+  .battle-total{font-size:27px}
+}
+@media(min-width:900px){
+  #miniField{min-height:210px;padding:82px 20px 25px}
+  #miniField:after{top:29px;width:120px;height:120px}
+  .mini-cell{width:32px;height:32px}.mini-cell.active{width:46px;height:46px}
+  .mini-cell .cell-code{font-size:9px}.mini-cell.active .cell-code{font-size:16px}
+  .desktop-battle-arena{display:block;margin-top:16px;margin-bottom:0}
+  #tab-myteam>#battleArena{display:none}
+  .battle-side{min-height:190px}.battle-photo{font-size:68px}.battle-name{right:62px;bottom:34px;font-size:16px}.battle-formula{right:62px;bottom:12px;font-size:12px}.battle-total{font-size:40px}
+}
+
+.roll-duel{width:100%;margin-top:12px;border:0;border-radius:14px;min-height:48px;background:linear-gradient(110deg,#ffcf42,#f5a21d);color:#132131;font-weight:900;cursor:pointer;font-size:17px}
+.roll-duel:disabled{opacity:.45;cursor:not-allowed}
+.duel-hint{color:#bdd1dc;font-size:12px;line-height:1.4;margin:10px 0 0}
+.last-result{margin-top:10px;padding:9px;border:1px solid #315366;border-radius:10px;font-size:12px;line-height:1.4;color:#d7e6ee}
+.last-result summary{cursor:pointer;font-weight:700}
+.selected-details{font-size:12px;color:#c2d6e2;margin-top:10px}
+.selected-details summary{cursor:pointer;min-height:30px}
+.hand-stat{display:none}
+.hand-locked{opacity:.45;pointer-events:none;filter:saturate(.6)}
+.battle-result-card{min-height:235px}
+.battle-result-card.winner{border:2px solid #c9f34f;box-shadow:0 0 0 2px #c9f34f28,0 0 22px #c9f34f30}
+.battle-result-card.away.winner{border-color:#ff76a4;box-shadow:0 0 20px #ff76a440}
+.battle-result-card .battle-name{bottom:75px;right:9px;font-size:15px}
+.battle-result-card .battle-formula{bottom:50px;right:8px;font-size:12px;white-space:normal;line-height:1.3}
+.battle-result-card .battle-total{left:8px;right:8px;bottom:4px;text-align:center;font-size:43px;color:#eef8ff}
+.battle-result-card.winner .battle-total{color:#c9f34f}
+.battle-result-card.away.winner .battle-total{color:#ff76a4}
+.winner-tag{position:absolute;z-index:3;top:8px;left:8px;background:#c9f34f;color:#15300b;font-size:9px;font-weight:900;border-radius:8px;padding:5px 7px}
+.away .winner-tag{background:#ff76a4;color:#430e22}
+.duel-outcome{margin-top:12px;padding:13px 10px;text-align:center;border-radius:14px;background:linear-gradient(130deg,#165b37,#0d372c);border:1px solid #86d642;color:#efffea}
+.duel-outcome.away{background:linear-gradient(130deg,#65213c,#391a31);border-color:#f2669a;color:#ffe9f0}
+.duel-outcome.neutral{background:#3e3619;border-color:#debd45;color:#fff4c8}
+.duel-outcome.rolling{background:#13394e;border-color:#2a5c75;color:#c4dbe9}
+.outcome-title{display:block;font-size:20px;font-weight:900;line-height:1.15;letter-spacing:.01em}
+.outcome-math{display:block;font-size:13px;margin-top:7px;line-height:1.4}
+.duel-outcome.goal .outcome-title{font-size:29px}
+.outcome-footnote{margin:9px 0 0;color:#bfd3df;text-align:center;font-size:11px;line-height:1.4}
+.result-reveal .battle-total{animation:total-reveal .3s ease-out}
+.result-reveal .duel-outcome{animation:outcome-reveal .35s ease-out}
+.rolling .battle-die{animation:duel-dice-roll .16s infinite alternate;will-change:transform}
+.pip-die{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px;padding:7px}
+.pip-dot{width:5px;height:5px;border-radius:50%;background:#122735;place-self:center}
+.mini-cell.travelled{background:#7eac42;color:#092e1b;border-color:#daff92}
+.mini-cell.active.ball-step{animation:ball-step .2s ease-out}
+@keyframes duel-dice-roll{from{transform:translateY(-2px) rotate(-15deg)}to{transform:translateY(2px) rotate(15deg)}}
+@keyframes total-reveal{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes outcome-reveal{from{opacity:.3;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ball-step{from{transform:scale(.75)}to{transform:scale(1)}}
+.mini-cell .sub{display:block;position:absolute;top:100%;margin-top:8px;font-size:9px;font-weight:900;color:#fff;white-space:nowrap;text-shadow:0 1px 3px #073221}
+@media(max-width:899px){
+  body{background:#071c2a}
+  .app{padding:10px 10px max(76px,env(safe-area-inset-bottom));max-width:520px}
+  #gamePanel{height:auto;gap:12px;color:#eff7fc}
+  #gamePanel .panel,#gamePanel .content{background:transparent;border:0;box-shadow:none;padding:0;border-radius:0}
+  #gamePanel .sticky-top{position:static;display:flex;flex-direction:column}
+  #gamePanel .content{overflow:visible}
+  .top-actions{gap:8px}
+  #gamePanel .top-actions .btn{padding:6px 12px;font-size:11px;min-height:36px;border-radius:10px;background:#14394d;color:#e2f1fa;border:1px solid #285267}
+  .score-top{gap:6px}
+  .teambox{padding:8px 6px;border-radius:13px}
+  .teamname{font-size:10px;line-height:1.2;margin-bottom:4px;white-space:normal}
+  .score{font-size:25px}
+  .score-badge{width:26px;height:30px;flex:0 0 26px}
+  .team-identity{gap:5px}
+  .centerbox{min-width:88px;padding:6px;background:#102e40;border-color:#285267}
+  .centerbox .time{font-size:10px;color:#ffd34c}
+  .centerbox .turn{display:none}
+  .dicebox{padding:3px;background:transparent;border:0;font-size:10px;gap:4px}
+  .dice{font-size:17px}
+  .statusline{margin-top:9px;padding:8px 10px;background:#123b4d;border-color:#255266}
+  .statusline .action{font-size:12px;color:#dbf365;margin:0;line-height:1.35}
+  .statusline .summary{display:none}
+  #miniField{margin-top:10px;min-height:126px;padding:65px 8px 27px;gap:2px;overflow:visible;border-radius:15px}
+  #miniField:after{width:64px;height:64px;top:28px}
+  .field-caption{font-size:9px;left:8px;top:8px;max-width:90%}
+  .mini-cell,.mini-cell.active{width:100%;height:29px;max-width:32px;min-width:0;border-radius:7px;transform:none;border-width:1px;box-shadow:none}
+  .mini-cell .cell-code,.mini-cell.active .cell-code{font-size:8px}
+  .mini-cell .sub{top:4px;margin:0;font-size:8px;color:inherit;text-shadow:none}
+  .mini-cell .cell-code{padding-top:13px}
+  .mini-cell.active{outline:2px solid #d4fb68;outline-offset:2px;box-shadow:0 0 14px #b9ec5090}
+  .mini-cell.active .cell-code{font-size:10px}
+  #desktopBattleArena{display:block;order:1;margin:12px 0 0;padding:11px;border-radius:18px;background:linear-gradient(135deg,#12354a,#0b2434)}
+  #battleArena{display:none}
+  .battle-title strong{font-size:13px}.battle-title span{font-size:9px}
+  .battle-versus{grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);gap:7px}
+  .battle-side{min-height:172px}
+  .battle-name{left:8px;right:8px;bottom:32px;font-size:13px}
+  .battle-formula{left:8px;right:37px;bottom:12px;font-size:10px}
+  .battle-total{font-size:25px;right:7px;bottom:7px}
+  .battle-die{width:31px;height:31px;font-size:20px}
+  .battle-result{font-size:11px}
+  .battle-result-card{min-height:218px}
+  .battle-result-card .battle-name{font-size:13px}
+  .battle-result-card .battle-formula{font-size:11px}
+  .battle-result-card .battle-total{font-size:39px}
+  .outcome-title{font-size:18px}.outcome-math{font-size:12px}
+  .tabs{position:fixed;z-index:30;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,520px);margin:0;padding:8px 10px max(8px,env(safe-area-inset-bottom));background:#0a2233f5;border-top:1px solid #285267;backdrop-filter:blur(12px);gap:8px}
+  .tab{font-size:12px;min-height:44px;border-radius:10px}
+  #tab-myteam .meta{color:#a9c5d5;margin:0 0 8px;font-size:11px}
+  #ballInfo,#keeperInfo{display:none}
+  #myTeamInfo:before{content:'Mayor valor primero · desliza ↔';display:block;color:#eef7fc;font-size:14px;font-weight:800;margin-bottom:4px}
+  #myCards{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 3px 10px;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#35617a transparent}
+  #myCards .card{flex:0 0 158px;display:flex;flex-direction:column;min-height:0;scroll-snap-align:start;border:1px solid #2b5269;border-radius:13px;background:#13364b;color:#fff;box-shadow:none}
+  #myCards .card.top-value{border-color:#71dd97;box-shadow:0 0 0 1px #71dd9740}
+  #myCards .card.selected{outline:2px solid #c9f34f;transform:none}
+  #myCards .player-art{height:114px;min-height:114px;border:0;background:#1c465d}
+  #myCards .player-photo{height:114px;line-height:114px;font-size:50px;background:#1c465d}
+  #myCards .name-overlay{padding:22px 8px 7px}
+  #myCards .name-overlay .primary{font-size:13px}
+  #myCards .name-overlay .secondary{display:none}
+  #myCards .card-body{padding:8px;gap:4px}
+  #myCards .stats{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  #myCards .stat{font-size:10px;gap:3px;padding:5px;border-radius:7px;background:#0c293b;border-color:#2b5269;color:#d9e9f2}
+  #myCards .stat strong{font-size:12px;color:#fff}
+  #myCards .stat.best{background:#bff3cd;color:#123d23;border-color:#7de49e}
+  #myCards .stat.best strong{color:#123d23}
+  #myCards .hand-stat{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#bad7e8}
+  #myCards .hand-stat strong{font-size:23px;color:#fff}
+  #myCards .top-value .hand-stat{color:#bff3cd}
+  #myCards .top-value .hand-stat strong{color:#90f3ac}
+  #myCards .play-inline{min-height:30px;padding:5px;font-size:10px;border-radius:7px;background:#235571}
+  #myCards .play-inline.selected{color:#18350c;background:#c9f34f}
+  #tab-myteam>div:last-child{display:none}
+  #rivalList .card{background:#17374a;color:#fff}
+  #rivalList .stat{background:#0e293a;color:#e5f2fa;border-color:#2b5066}
+  #logList .list-item{background:#123346;color:#dbeaf3;border-color:#285065}
+  @media(max-width:360px){.battle-side{min-height:155px}.mini-cell .sub{font-size:7px}.battle-name{font-size:11px}.centerbox{min-width:78px}}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+@media(min-width:900px){.battle-result-card{min-height:190px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="setupPanel" class="panel">
+    <h2 style="margin:0 0 10px 0">Fútbol de Cartas</h2>
+    <div class="top-actions" style="margin-bottom:12px">
+      <button class="btn" id="loadDbBtn" type="button">Cargar base JSON</button>
+      <a class="btn secondary" href="editor.html" style="text-decoration:none;display:inline-flex;align-items:center">Editor · 2026–27</a>
+      <button class="btn secondary" id="resetDbBtn" type="button">Base de ejemplo</button>
+      <button class="btn secondary hidden" id="resumeMatchBtn" type="button">Continuar partido</button>
+      <input id="dbFile" type="file" accept=".json,application/json" class="hidden">
+    </div>
+    <div class="small-muted" id="dbStatus">Carga una base de equipos exportada desde el editor.</div>
+
+    <div class="setup-grid">
+      <div class="cardbox">
+        <div style="font-weight:900;margin-bottom:8px">Equipo local</div>
+        <select id="homeSelect"></select>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
+          <div class="badge-wrap" id="homeBadge"></div>
+          <div>
+            <div id="homeNamePreview" style="font-weight:900">-</div>
+            <div class="small-muted" id="homePlayersPreview">10 jugadores + portero</div>
+          </div>
+        </div>
+      </div>
+      <div class="cardbox">
+        <div style="font-weight:900;margin-bottom:8px">Equipo visitante</div>
+        <select id="awaySelect"></select>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
+          <div class="badge-wrap" id="awayBadge"></div>
+          <div>
+            <div id="awayNamePreview" style="font-weight:900">-</div>
+            <div class="small-muted" id="awayPlayersPreview">10 jugadores + portero</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-choice"><label for="matchMode">Modo de partido</label><select id="matchMode"><option value="classic">Clásico · todas las cartas</option><option value="tactical">Táctico · mano, zonas y eventos · beta</option></select><p>Modo táctico: 4 jugadores en mano (al menos uno de cada rol al empezar), 2 tácticas iniciales, una táctica cada 3 duelos (máximo 3). 3 casillas por zona; +1 de posición, también al disparar. Una táctica por equipo y duelo. El descanso conserva las manos.</p><p>Formación táctica común: 4 DEF / 3 MED / 3 DEL. Si faltan posiciones se asignan provisionalmente por orden: 4 defensas, 3 medios y 3 delanteros; puedes corregirlas en el editor. El equilibrio de esta beta está en pruebas.</p></div>
+    <div class="top-actions" style="margin-top:14px">
+      <button class="btn" id="startMatchBtn" type="button" disabled>Jugar partido suelto</button>
+    </div>
+  </div>
+
+  <div id="gamePanel" class="hidden">
+    <div class="panel sticky-top">
+      <div class="top-actions" style="margin-bottom:10px">
+        <button class="btn secondary" id="backToMenuBtn" type="button">Volver al menú</button>
+        <button class="btn secondary" id="restartMatchBtn" type="button">Reiniciar partido</button>
+      </div>
+
+      <div class="score-top">
+        <div class="teambox home">
+          <div class="team-identity">
+            <div class="score-badge" id="homeScoreBadge">A</div>
+            <div class="team-copy">
+              <div class="teamname" id="homeTeamLabel">Equipo A</div>
+              <div class="score" id="scoreA">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="centerbox">
+          <div class="time" id="timeInfo">Min 0</div>
+          <div class="dicebox">
+            <span id="diceMain" class="dice">🎲</span>
+            <span id="diceTextMain">Dado: -</span>
+          </div>
+          <div class="turn" id="turnInfo">Inicia: Equipo A</div>
+        </div>
+
+        <div class="teambox away">
+          <div class="team-identity">
+            <div class="score-badge" id="awayScoreBadge">B</div>
+            <div class="team-copy">
+              <div class="teamname" id="awayTeamLabel">Equipo B</div>
+              <div class="score" id="scoreB">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="statusline">
+        <div class="action" id="actionText">Empieza el partido. Elige una carta para disputar la posesión.</div>
+        <div class="summary" id="summaryText">Aquí verás el atributo comparado, el resultado del duelo y la siguiente acción.</div>
+      </div>
+
+      <div id="miniField"></div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="myteam" type="button">Mi equipo</button>
+        <button class="tab" data-tab="rival" type="button">Rival</button>
+        <button class="tab" data-tab="log" type="button">Registro</button>
+      </div>
+
+      <div id="desktopBattleArena" class="battle-arena desktop-battle-arena"></div>
+    </div>
+
+    <div class="content">
+      <div class="tabpanel active" id="tab-myteam">
+        <div id="battleArena" class="battle-arena"></div>
+        <div class="meta">
+          <div id="ballInfo" class="strong">Balón en Centro · Casilla: Pase</div>
+          <div id="myTeamInfo">Cartas disponibles: 10/10 · Cartas usadas: 0/10</div>
+          <div id="keeperInfo">Portero: el atributo se decide al azar</div>
+        </div>
+        <div class="cards-grid" id="myCards"></div>
+        <div id="keeperSection" style="margin-top:12px">
+          <div class="strong" style="margin-bottom:8px">Portero</div>
+          <div id="keeperCard"></div>
+        </div>
+      </div>
+
+      <div class="tabpanel" id="tab-rival">
+        <div class="meta">
+          <div id="rivalInfo">Cartas disponibles rival: 10/10 · Cartas usadas rival: 0/10</div>
+        </div>
+        <div class="list" id="rivalList"></div>
+      </div>
+
+      <div class="tabpanel" id="tab-log">
+        <div class="list" id="logList"></div>
+      </div>
+
+      <!-- panel interno oculto solo para mantener lógica de render del campo -->
+      <div class="tabpanel hidden" id="tab-field">
+        <div class="meta"><div id="centerInfo">Centro variable: Pase</div></div>
+        <div class="list" id="fieldList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="ai-strategy.js"></script>
+<script src="tactical-rules.js"></script>
+<script src="tactical-game.js"></script>
+<script>
+const CENTER_STATS=["ritmo","fisico","pase","regate","defensa"];
+const STAT_LABELS={ritmo:"Ritmo",fisico:"Físico",defensa:"Defensa",regate:"Regate",pase:"Pase",tiro:"Tiro"};
+
+const FALLBACK_DB={
+  database_name:"Mis equipos",
+  teams:[
+    {
+      team_id:"equipo_a",
+      team_name:"Equipo A",
+      badge_data:"",
+      players:[
+        {id:1,name:"Lateral Izq.",avatar:"🛡️",photo_data:"",ritmo:6,fisico:7,defensa:7,regate:5,pase:5,tiro:3},
+        {id:2,name:"Central 1",avatar:"🧱",photo_data:"",ritmo:4,fisico:8,defensa:8,regate:3,pase:4,tiro:2},
+        {id:3,name:"Central 2",avatar:"🧱",photo_data:"",ritmo:4,fisico:8,defensa:8,regate:3,pase:4,tiro:2},
+        {id:4,name:"Lateral Dcho.",avatar:"🛡️",photo_data:"",ritmo:6,fisico:7,defensa:7,regate:5,pase:5,tiro:3},
+        {id:5,name:"Mediocentro 1",avatar:"🎯",photo_data:"",ritmo:6,fisico:6,defensa:6,regate:6,pase:8,tiro:5},
+        {id:6,name:"Mediocentro 2",avatar:"🎯",photo_data:"",ritmo:6,fisico:6,defensa:6,regate:6,pase:8,tiro:5},
+        {id:7,name:"Interior",avatar:"🧠",photo_data:"",ritmo:7,fisico:5,defensa:5,regate:7,pase:7,tiro:5},
+        {id:8,name:"Extremo Izq.",avatar:"⚡",photo_data:"",ritmo:9,fisico:4,defensa:3,regate:8,pase:5,tiro:6},
+        {id:9,name:"Extremo Dcho.",avatar:"⚡",photo_data:"",ritmo:9,fisico:4,defensa:3,regate:8,pase:5,tiro:6},
+        {id:10,name:"Delantero",avatar:"🔥",photo_data:"",ritmo:8,fisico:6,defensa:2,regate:7,pase:4,tiro:9}
+      ],
+      keeper:{name:"Portero A",avatar:"🧤",photo_data:"",parada:9,reflejos:4,juego_aereo:8,uno_contra_uno:8}
+    },
+    {
+      team_id:"equipo_b",
+      team_name:"Equipo B",
+      badge_data:"",
+      players:[
+        {id:101,name:"Lateral",avatar:"🛡️",photo_data:"",ritmo:6,fisico:7,defensa:7,regate:5,pase:5,tiro:3},
+        {id:102,name:"Central 1",avatar:"🧱",photo_data:"",ritmo:4,fisico:8,defensa:8,regate:3,pase:4,tiro:2},
+        {id:103,name:"Central 2",avatar:"🧱",photo_data:"",ritmo:4,fisico:8,defensa:8,regate:3,pase:4,tiro:2},
+        {id:104,name:"Lateral",avatar:"🛡️",photo_data:"",ritmo:6,fisico:7,defensa:7,regate:5,pase:5,tiro:3},
+        {id:105,name:"Mediocentro 1",avatar:"🎯",photo_data:"",ritmo:6,fisico:6,defensa:6,regate:6,pase:7,tiro:5},
+        {id:106,name:"Mediocentro 2",avatar:"🎯",photo_data:"",ritmo:6,fisico:6,defensa:6,regate:6,pase:7,tiro:5},
+        {id:107,name:"Interior",avatar:"🧠",photo_data:"",ritmo:7,fisico:5,defensa:5,regate:7,pase:6,tiro:5},
+        {id:108,name:"Extremo",avatar:"⚡",photo_data:"",ritmo:8,fisico:4,defensa:3,regate:7,pase:5,tiro:6},
+        {id:109,name:"Extremo",avatar:"⚡",photo_data:"",ritmo:8,fisico:4,defensa:3,regate:7,pase:5,tiro:6},
+        {id:110,name:"Delantero",avatar:"🔥",photo_data:"",ritmo:8,fisico:6,defensa:2,regate:7,pase:4,tiro:9}
+      ],
+      keeper:{name:"Portero B",avatar:"🧤",photo_data:"",parada:9,reflejos:4,juego_aereo:8,uno_contra_uno:8}
+    }
+  ]
+};
+
+let database=structuredClone(FALLBACK_DB);
+let currentCenterStat=pickCenterStat();
+let BOARD=buildBoard(currentCenterStat);
+const SHOOT_LINE_A=0;
+let SHOOT_LINE_B=12, START_BALL=6;
+
+const state={
+  homeTeam:null, awayTeam:null,
+  homeCards:[], awayCards:[],
+  keeperA:null, keeperB:null,
+  selectedCardId:null,
+  usedHome:[], usedAway:[],
+  ball:START_BALL,
+  turn:"A",
+  time:0,
+  half:1,
+  score:{A:0,B:0},
+  log:["Empieza el partido. Elige una carta para disputar la posesión."],
+  actionText:"Empieza el partido. Elige una carta para disputar la posesión.",
+  summaryText:"Aquí verás el atributo comparado, el resultado del duelo y la siguiente acción.",
+  pendingCpuCard:null,
+  shotMode:false,
+  shotAttacker:null,
+  matchEnded:false,
+  lastDice:null,
+  battle:null,
+  resultPending:false,duelPhase:null,duelVisualBall:null
+};
+
+const STORE_NAME="futbol-cartas";
+const STORE_VERSION=1;
+function openStore(){
+  return new Promise((resolve,reject)=>{
+    const request=indexedDB.open(STORE_NAME,STORE_VERSION);
+    request.onupgradeneeded=()=>request.result.createObjectStore("data");
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error);
+  });
+}
+async function storeValue(key,value){
+  const db=await openStore();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction("data","readwrite");
+    tx.objectStore("data").put(value,key);
+    tx.oncomplete=()=>{db.close();resolve()};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+  });
+}
+async function readValue(key){
+  const db=await openStore();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction("data","readonly");
+    const request=tx.objectStore("data").get(key);
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error);
+    tx.oncomplete=()=>db.close();
+  });
+}
+async function deleteValue(key){
+  const db=await openStore();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction("data","readwrite");
+    tx.objectStore("data").delete(key);
+    tx.oncomplete=()=>{db.close();resolve()};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+  });
+}
+let saveQueue=Promise.resolve();
+const QUICK_SAVE="futbol-cartas-active-v2";
+const SCREEN_SAVE="futbol-cartas-screen";
+function matchUI(){
+  return {tab:document.querySelector('.tab.active')?.dataset.tab||'myteam',
+    pageScroll:window.scrollY,contentScroll:document.querySelector('#gamePanel .content')?.scrollTop||0,
+    handScroll:$("myCards").scrollLeft};
+}
+function persistMatch(){
+  if(!state.homeTeam) return;
+  const saved={state:structuredClone(state),currentCenterStat,BOARD:structuredClone(BOARD),ui:matchUI(),updatedAt:Date.now()};
+  // A small synchronous checkpoint survives Android killing the tab before IDB finishes.
+  try{localStorage.setItem(QUICK_SAVE,JSON.stringify(saved,(key,value)=>
+    key==='photo_data'||key==='badge_data'?undefined:value));}catch(_){ }
+  saveQueue=saveQueue.catch(()=>{}).then(()=>storeValue("activeMatch",saved));
+  saveQueue.then(()=>$("resumeMatchBtn").classList.remove("hidden")).catch(()=>{});
+}
+function rememberScreen(screen){try{localStorage.setItem(SCREEN_SAVE,screen);}catch(_){}}
+function savedScreen(){try{return localStorage.getItem(SCREEN_SAVE);}catch(_){return null;}}
+function restoreUI(ui){
+  const tab=['myteam','rival','log'].includes(ui?.tab)?ui.tab:'myteam';
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+tab));
+  requestAnimationFrame(()=>{
+    document.querySelector('#gamePanel .content').scrollTop=ui?.contentScroll||0;
+    $("myCards").scrollLeft=ui?.handScroll||0;
+    window.scrollTo(0,ui?.pageScroll||0);
+  });
+}
+async function latestSavedMatch(){
+  let stored=null,quick=null;
+  try{stored=await readValue('activeMatch');}catch(_){ }
+  try{quick=JSON.parse(localStorage.getItem(QUICK_SAVE));}catch(_){ }
+  if(!quick?.state?.homeTeam || (stored?.updatedAt||0)>=(quick.updatedAt||0)) return stored;
+  // Photos live in IndexedDB/the imported database, never in the small checkpoint.
+  const q=quick.state;
+  for(const [teamKey,cardsKey,keeperKey,side] of [['homeTeam','homeCards','keeperA','home'],['awayTeam','awayCards','keeperB','away']]){
+    // Scope by team/season: two opposing cards can legitimately have the same name.
+    const team=q[teamKey];
+    const dbTeam=database.teams.find(t=>t.team_id===team.team_id&&t.team_name===team.team_name)||database.teams.find(t=>t.team_name===team.team_name);
+    const oldTeam=stored?.state?.[teamKey];
+    const sameTeam=oldTeam?.team_name===team.team_name&&oldTeam?.team_id===team.team_id;
+    const sources=[...(dbTeam?.players||[]),...(sameTeam?stored.state[cardsKey]||[]:[])];
+    function playerPhoto(target){
+      if(!target)return;
+      const source=[...sources].reverse().find(p=>p.name===target.name&&(target.id==null||p.id===target.id)&&p.photo_data);
+      if(source)target.photo_data=source.photo_data;
+    }
+    (q[cardsKey]||[]).forEach(playerPhoto);(team.players||[]).forEach(playerPhoto);
+    const keeperSources=[dbTeam?.keeper,...(sameTeam?[stored.state[keeperKey]]:[])];
+    const keeperSource=keeperSources.reverse().find(k=>k?.name===q[keeperKey]?.name&&k.photo_data);
+    if(keeperSource){q[keeperKey].photo_data=keeperSource.photo_data;if(team.keeper)team.keeper.photo_data=keeperSource.photo_data;}
+    team.badge_data=(sameTeam&&oldTeam.badge_data)||dbTeam?.badge_data||'';
+    const portrait=q.battle?.[side];
+    if(portrait){
+      if(portrait.name===q[keeperKey]?.name&&q.battle.kind==='shot')portrait.photo_data=q[keeperKey].photo_data||'';
+      else playerPhoto(portrait);
+    }
+    if(side==='away'){playerPhoto(q.pendingCpuCard);playerPhoto(q.pendingDefenseCard);}
+  }
+  return quick;
+}
+async function refreshResumeButton(){
+  try{
+    const saved=await latestSavedMatch();
+    $("resumeMatchBtn").classList.toggle("hidden",!saved?.state?.homeTeam);
+  }catch(_){ $("resumeMatchBtn").classList.add("hidden"); }
+}
+async function resumeSavedMatch(){
+  const saved=await latestSavedMatch();
+  if(!saved?.state?.homeTeam) return;
+  Object.assign(state,saved.state);
+  state.mode=saved.state.mode||'classic';state.tactical=saved.state.tactical||null;configurePitch();
+  $('matchMode').value=state.mode;
+  // A resolved turn is never rolled again after Android unloads the tab.
+  cancelDuelAnimation();
+  if(state.resultPending){state.duelPhase='result';state.duelVisualBall=state.ball;}
+  currentCenterStat=saved.currentCenterStat||pickCenterStat();
+  BOARD=Array.isArray(saved.BOARD)?saved.BOARD:buildBoard(currentCenterStat,isTactical());
+  $("homeTeamLabel").textContent=state.homeTeam.team_name;
+  $("awayTeamLabel").textContent=state.awayTeam.team_name;
+  $("setupPanel").classList.add("hidden");
+  $("gamePanel").classList.remove("hidden");
+  rememberScreen('game');
+  renderAll();
+  restoreUI(saved.ui);
+}
+
+function $(id){return document.getElementById(id)}
+function d6(){return Math.floor(Math.random()*6)+1}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function pickCenterStat(){return CENTER_STATS[Math.floor(Math.random()*CENTER_STATS.length)]}
+function buildBoard(centerStat,tactical=false){
+  if(tactical)return TacticalRules.board(centerStat);
+  return [
+    {key:0,label:"Tiro A",shoot:true},
+    {key:1,label:"A6",stat:"defensa"},
+    {key:2,label:"A5",stat:"fisico"},
+    {key:3,label:"A4",stat:"pase"},
+    {key:4,label:"A3",stat:"regate"},
+    {key:5,label:"A2",stat:"ritmo"},
+    {key:6,label:"Centro",stat:centerStat,center:true},
+    {key:7,label:"B2",stat:"ritmo"},
+    {key:8,label:"B3",stat:"regate"},
+    {key:9,label:"B4",stat:"pase"},
+    {key:10,label:"B5",stat:"fisico"},
+    {key:11,label:"B6",stat:"defensa"},
+    {key:12,label:"Tiro B",shoot:true}
+  ];
+}
+
+function renderBadge(containerId, team){
+  const el=$(containerId);
+  el.innerHTML=team?.badge_data ? `<img src="${team.badge_data}" alt="${team.team_name}">` : `<span style="font-size:12px;color:#5f7083">Sin escudo</span>`;
+}
+
+function normalizeTeam(team,fallbackPrefix="team"){
+  return {
+    team_id:team.team_id||fallbackPrefix,
+    team_name:team.team_name||fallbackPrefix,
+    badge_data:team.badge_data||"",
+    players:(team.players||[]).slice(0,10).map((p,idx)=>({
+      id:Number(p.id)||(idx+1),
+      name:p.name||`Jugador ${idx+1}`,
+      avatar:p.avatar||"🙂",
+      photo_data:p.photo_data||"",
+      role:TacticalRules.inferRole(p)||(idx<4?'DEF':idx<7?'MED':'DEL'),
+      role_provisional:p.role_provisional===true||!TacticalRules.inferRole(p),
+      ritmo:Number(p.ritmo)||0,
+      fisico:Number(p.fisico)||0,
+      defensa:Number(p.defensa)||0,
+      regate:Number(p.regate)||0,
+      pase:Number(p.pase)||0,
+      tiro:Number(p.tiro)||0
+    })),
+    keeper:{
+      name:team.keeper?.name||"Portero",
+      avatar:team.keeper?.avatar||"🧤",
+      photo_data:team.keeper?.photo_data||"",
+      parada:Number(team.keeper?.parada)||0,
+      reflejos:Number(team.keeper?.reflejos)||0,
+      juego_aereo:Number(team.keeper?.juego_aereo)||0,
+      uno_contra_uno:Number(team.keeper?.uno_contra_uno)||0
+    }
+  };
+}
+
+function populateSelectors(){
+  const home=$("homeSelect"), away=$("awaySelect");
+  home.innerHTML=""; away.innerHTML="";
+  (database.teams||[]).forEach((team,idx)=>{
+    const o1=document.createElement("option");
+    o1.value=idx; o1.textContent=team.team_name; home.appendChild(o1);
+    const o2=document.createElement("option");
+    o2.value=idx; o2.textContent=team.team_name; away.appendChild(o2);
+  });
+  if((database.teams||[]).length>1) away.value="1";
+  updateSetupPreview();
+}
+
+function updateSetupPreview(){
+  const teams=database.teams||[];
+  const homeIdx=Number($("homeSelect").value||0);
+  const awayIdx=Number($("awaySelect").value||0);
+  const homeTeam=teams[homeIdx];
+  const awayTeam=teams[awayIdx];
+  $("homeNamePreview").textContent=homeTeam?homeTeam.team_name:"-";
+  $("awayNamePreview").textContent=awayTeam?awayTeam.team_name:"-";
+  $("homePlayersPreview").textContent=homeTeam?`${homeTeam.players.length} jugadores + portero`:"-";
+  $("awayPlayersPreview").textContent=awayTeam?`${awayTeam.players.length} jugadores + portero`:"-";
+  renderBadge("homeBadge", homeTeam);
+  renderBadge("awayBadge", awayTeam);
+  $("startMatchBtn").disabled=!(homeTeam&&awayTeam);
+}
+
+function availableHomeCards(){return isTactical()?tacticalCards('A'):state.homeCards.filter(c=>!state.usedHome.includes(c.id))}
+function availableAwayCards(){return isTactical()?tacticalCards('B'):state.awayCards.filter(c=>!state.usedAway.includes(c.id))}
+function getSelectedCard(){return state.homeCards.find(c=>c.id===state.selectedCardId)||null}
+function getCellStat(index){const cell=BOARD.find(c=>c.key===index); return cell?.stat||null}
+function getCpuBestResponse(cards, stat, side="B", knownOpponent=null){
+  if(!cards?.length && state.homeTeam && !state.matchEnded){
+    ensureDeckResetIfNeeded(side);
+    cards=side==='B'?availableAwayCards():availableHomeCards();
+  }
+  if(!cards || !cards.length) return null;
+
+  const role=state.shotMode&&state.shotAttacker===side?'shot':knownOpponent?'defense':'attack';
+  const decision=CardAI.choose({cards,stat:stat||'tiro',role,knownOpponent:role==='defense'?knownOpponent:null,
+    opponents:side==='B'?availableHomeCards():availableAwayCards(),roster:side==='B'?state.awayCards:state.homeCards,
+    opponentRoster:side==='B'?state.homeCards:state.awayCards,
+    opponentKeeper:side==='B'?state.keeperA:state.keeperB,ownKeeper:side==='B'?state.keeperB:state.keeperA,
+    board:BOARD,ball:state.ball,direction:side==='B'?1:-1,minute:state.time});
+  if(side==='B')state.aiDecision={...decision,card:undefined,cardId:decision.card.id};
+  return decision.card;
+}
+function logCpuDecision(card){
+  const d=state.aiDecision;if(!d||d.cardId!==card?.id||d.logged)return;
+  const label=STAT_LABELS[d.stat]||d.stat,odds=Math.round(d.win*100);
+  const reason=d.reason.replace(/ritmo|fisico|defensa|regate|pase|tiro/g,s=>STAT_LABELS[s]||s);
+  addLog(`IA · ${card.name} · ${label}: ${d.estimate?'estimación de victoria ante respuestas probables':d.role==='shot'?'probabilidad de gol':'probabilidad de ganar'} ${odds}%. ${reason}.`);
+  d.logged=true;
+}
+function addLog(text){state.log.unshift(text); state.log=state.log.slice(0,20)}
+function bestAvailableStatValue(stat){
+  const available=availableHomeCards();
+  if(!available.length) return null;
+  return Math.max(...available.map(c=>c[stat]));
+}
+function renderPhoto(card){
+  return card.photo_data ? `<img src="${card.photo_data}" alt="${card.name}" class="player-img" onload="fitPlayerPhoto(this)">` : (card.avatar||"🙂");
+}
+function fitPlayerPhoto(img){
+  // Small source portraits are displayed close to their native size, never stretched into a full card.
+  img.classList.toggle('low-res',Math.min(img.naturalWidth,img.naturalHeight)<180);
+  img.style.setProperty('--photo-native-width',img.naturalWidth+'px');
+  img.style.setProperty('--photo-native-height',img.naturalHeight+'px');
+}
+window.fitPlayerPhoto=fitPlayerPhoto;
+
+function randomKeeperStatName(){
+  const opts=["parada","reflejos","juego_aereo","uno_contra_uno"];
+  return opts[Math.floor(Math.random()*opts.length)];
+}
+function moveBallTowardShot(fromPos, attackingSide, amount){
+  if(attackingSide==="A"){
+    return Math.max(SHOOT_LINE_A, fromPos - amount);
+  }
+  return Math.min(SHOOT_LINE_B, fromPos + amount);
+}
+function enterShotMode(attackerSide){
+  state.shotMode=true;
+  state.shotAttacker=attackerSide;
+  state.pendingCpuCard=null;
+  state.selectedCardId=null;
+  state.pendingKeeperStat=null;
+  if(attackerSide==="A"){
+    state.actionText=`Balón en línea de tiro. ${state.homeTeam.team_name} debe elegir otro jugador para disparar.`;
+    state.summaryText=`Nueva jugada de disparo: elige una carta de campo para rematar contra el portero rival.`;
+  }else{
+    state.actionText=`Balón en línea de tiro. ${state.awayTeam.team_name} va a disparar.`;
+    state.summaryText=`Nueva jugada de disparo: el atributo de tu portero se elegirá al azar.`;
+  }
+}
+function resolveShot(shooter, attackerSide){
+  const keeper = attackerSide==="A" ? state.keeperB : state.keeperA;
+  const keeperStatName = randomKeeperStatName();
+  const keeperBase = keeper[keeperStatName] || 0;
+  const rollShooter = d6();
+  const rollKeeper = d6();
+  state.lastDice=`${rollShooter}-${rollKeeper}`;
+  const shotTotal = shooter.tiro + rollShooter;
+  const saveTotal = keeperBase + rollKeeper;
+  const diff = saveTotal - shotTotal;
+  setShotBattle(shooter,keeper,keeperStatName,rollShooter,rollKeeper,shotTotal,saveTotal,attackerSide);
+
+  addLog(`Disparo: ${shooter.name} (${shotTotal}) vs portero ${keeper.name} usando ${keeperStatName} (${saveTotal}).`);
+
+  let nextAttacker;
+  if(shotTotal > saveTotal){
+    state.score[attackerSide] += 1;
+    state.actionText = "¡Gol! El balón vuelve al centro.";
+    state.summaryText = `<span class="${attackerSide==="A" ? "result-home" : "result-away"}">Resultado:</span> ${shooter.name} marca. Tiro ${shooter.tiro} + dado ${rollShooter} = ${shotTotal}; portero con ${keeperStatName} ${keeperBase} + dado ${rollKeeper} = ${saveTotal}.`;
+    nextAttacker = attackerSide==="A" ? "B" : "A";
+  } else {
+    state.actionText = "El portero evita el gol. El balón vuelve al centro.";
+    state.summaryText = `<span class="result-neutral">Resultado:</span> el portero gana con ${keeperStatName}. Tiro ${shooter.tiro} + dado ${rollShooter} = ${shotTotal}; portero ${keeperBase} + dado ${rollKeeper} = ${saveTotal}.`;
+    if(diff >= 3){
+      nextAttacker = attackerSide==="A" ? "B" : "A";
+      state.summaryText += ` Como el portero ganó por 3 o más, la siguiente jugada empieza atacando ${nextAttacker==="A" ? state.homeTeam.team_name : state.awayTeam.team_name}.`;
+    } else {
+      nextAttacker = attackerSide;
+      state.summaryText += ` Como el portero ganó por 2 o menos, continúa atacando ${attackerSide==="A" ? state.homeTeam.team_name : state.awayTeam.team_name}.`;
+    }
+  }
+
+  state.ball = START_BALL;
+  state.turn = nextAttacker;
+  state.shotMode = false;
+  state.shotAttacker = null;
+  state.pendingKeeperStat = null;
+  state.pendingCpuCard=null;
+}
+function ensureDeckResetIfNeeded(team){
+  if(isTactical())return;
+  if(team==="A" && availableHomeCards().length===0){
+    state.usedHome=[]; addLog(`${state.homeTeam.team_name} recupera sus 10 cartas de campo.`);
+  }
+  if(team==="B" && availableAwayCards().length===0){
+    state.usedAway=[]; addLog(`${state.awayTeam.team_name} recupera sus 10 cartas de campo.`);
+  }
+}
+
+let lastAnimatedDiceToken=null;
+function animateDice(){
+  const dice=$("diceMain");
+  dice.textContent="🎲";
+  $("diceTextMain").textContent=`Dado: ${state.lastDice ?? "-"}`;
+  const token=state.time+':'+state.lastDice;
+  if(state.lastDice!==null&&lastAnimatedDiceToken!==token){
+    lastAnimatedDiceToken=token;
+    dice.classList.remove("roll");
+    void dice.offsetWidth;
+    dice.classList.add("roll");
+  }
+}
+
+function startMatch(){
+  const mode=$('matchMode').value;
+  if(mode==='tactical'){
+    const chosen=[database.teams[Number($('homeSelect').value||0)],database.teams[Number($('awaySelect').value||0)]].map(t=>normalizeTeam(t));
+    if(chosen.some(t=>t.players.length!==10||!Object.entries({DEF:4,MED:3,DEL:3}).every(([role,count])=>t.players.filter(p=>p.role===role).length===count))){
+      $('dbStatus').textContent='Para el modo táctico, cada equipo necesita 4 DEF, 3 MED y 3 DEL. Corrige las posiciones en el editor. El modo clásico no exige esa formación.';return;
+    }
+  }
+  state.mode=mode;state.tactical=null;configurePitch();
+  cancelDuelAnimation();
+  state.resultPending=false;
+  state.duelPhase=null;
+  state.duelVisualBall=null;
+  const teams=database.teams||[];
+  const homeIdx=Number($("homeSelect").value||0);
+  const awayIdx=Number($("awaySelect").value||0);
+  const homeTeam=normalizeTeam(teams[homeIdx], "home");
+  const awayTeam=normalizeTeam(teams[awayIdx], "away");
+
+  state.homeTeam=homeTeam;
+  state.awayTeam=awayTeam;
+  state.homeCards=structuredClone(homeTeam.players);
+  state.awayCards=structuredClone(awayTeam.players);
+  state.keeperA=structuredClone(homeTeam.keeper);
+  state.keeperB=structuredClone(awayTeam.keeper);
+  currentCenterStat=pickCenterStat();
+  BOARD=buildBoard(currentCenterStat,isTactical());
+  state.selectedCardId=null;
+  state.usedHome=[];
+  state.usedAway=[];
+  state.ball=START_BALL;
+  state.turn="A";
+  state.time=0;
+  state.half=1;
+  state.score={A:0,B:0};
+  state.log=[`Empieza el partido entre ${homeTeam.team_name} y ${awayTeam.team_name}.`];
+  state.actionText="Empieza el partido. Elige una carta para disputar la posesión.";
+  state.summaryText="Aquí verás el atributo comparado, el resultado del duelo y la siguiente acción.";
+  state.pendingCpuCard=null;
+  state.pendingDefenseCard=null;
+  state.responseToCardId=null;
+  state.aiDecision=null;
+  state.shotMode=false;
+  state.shotAttacker=null;
+  state.matchEnded=false;
+  state.pendingKeeperStat=null;
+  state.lastDice=null;
+  state.battle=null;
+  if(isTactical()){
+    initTactical();
+    if([...state.homeCards,...state.awayCards].some(p=>p.role_provisional))addLog('Hay roles provisionales asignados por orden (4 DEF / 3 MED / 3 DEL). Corrígelos en el editor; no se ha modificado el JSON original.');
+  }
+
+  $("homeTeamLabel").textContent=homeTeam.team_name;
+  $("awayTeamLabel").textContent=awayTeam.team_name;
+  $("setupPanel").classList.add("hidden");
+  $("gamePanel").classList.remove("hidden");
+  rememberScreen('game');
+  restoreUI({tab:'myteam'});
+  renderAll();
+  const content=document.querySelector("#gamePanel .content");
+  if(content) content.scrollTop=0;
+}
+
+function backToMenu(){
+  finishDuelPresentation();
+  persistMatch();
+  rememberScreen('menu');
+  $("gamePanel").classList.add("hidden");
+  $("setupPanel").classList.remove("hidden");
+}
+
+function renderScoreBadge(containerId,team,fallback){
+  const el=$(containerId);
+  if(!el||!team) return;
+  el.innerHTML=team.badge_data
+    ? `<img src="${team.badge_data}" alt="Escudo de ${team.team_name}">`
+    : `<span>${(team.team_name||fallback).trim().charAt(0).toUpperCase()||fallback}</span>`;
+}
+
+function battleIdentity(card){
+  return {name:card?.name||"Jugador",avatar:card?.avatar||"⚽",photo_data:card?.photo_data||""};
+}
+
+function setDuelBattle(homeCard,awayCard,stat,homeRoll,awayRoll,homeTotal,awayTotal){
+  const diff=homeTotal-awayTotal;
+  const winner=diff===0?null:(diff>0?"home":"away");
+  const winnerName=winner==="home"?state.homeTeam.team_name:winner==="away"?state.awayTeam.team_name:"";
+  state.battle={
+    kind:"duel",title:`Duelo · ${STAT_LABELS[stat]}`,label:STAT_LABELS[stat].toUpperCase(),
+    home:{...battleIdentity(homeCard),statLabel:STAT_LABELS[stat],base:homeCard[stat],roll:homeRoll,total:homeTotal},
+    away:{...battleIdentity(awayCard),statLabel:STAT_LABELS[stat],base:awayCard[stat],roll:awayRoll,total:awayTotal},
+    winner,result:diff===0?"Empate: el balón no se mueve":`Gana ${winnerName}`,detail:diff===0?"Sin avance":`Avanza ${Math.abs(diff)} ${Math.abs(diff)===1?"casilla":"casillas"}`
+  };
+}
+
+function setShotBattle(shooter,keeper,keeperStatName,rollShooter,rollKeeper,shotTotal,saveTotal,attackerSide){
+  const goal=shotTotal>saveTotal;
+  const homeAttacks=attackerSide==="A";
+  const keeperLabels={parada:'Parada',reflejos:'Reflejos',juego_aereo:'Juego aéreo',uno_contra_uno:'1 contra 1'};
+  const shooterData={...battleIdentity(shooter),statLabel:'Tiro',base:shooter.tiro,roll:rollShooter,total:shotTotal};
+  const keeperData={...battleIdentity(keeper),statLabel:keeperLabels[keeperStatName],base:keeper[keeperStatName]||0,roll:rollKeeper,total:saveTotal};
+  state.battle={
+    kind:"shot",goal,attackerSide,title:"Disparo a puerta",label:homeAttacks?"TIRO":"PARADA",
+    home:homeAttacks?shooterData:keeperData,
+    away:homeAttacks?keeperData:shooterData,
+    winner:goal?(homeAttacks?"home":"away"):(homeAttacks?"away":"home"),
+    result:goal?`¡Gol de ${shooter.name}!`:`Parada de ${keeper.name}`,
+    detail:`${STAT_LABELS.tiro} ${shotTotal} · ${keeperStatName.replaceAll("_"," ")} ${saveTotal}`
+  };
+}
+
+function renderBattlePhoto(player){
+  return player.photo_data
+    ? `<img src="${player.photo_data}" alt="${player.name}" onload="fitPlayerPhoto(this)">`
+    : `<span aria-hidden="true">${player.avatar||"⚽"}</span>`;
+}
+
+let turnIsResolving=false;
+let duelAnimationVersion=0;
+const duelTimers=new Set();
+function cancelDuelAnimation(){
+  duelAnimationVersion++;
+  duelTimers.forEach(clearTimeout);duelTimers.clear();
+}
+function duelLater(callback,delay){
+  const version=duelAnimationVersion;
+  const timer=setTimeout(()=>{duelTimers.delete(timer);if(version===duelAnimationVersion&&state.resultPending)callback();},delay);
+  duelTimers.add(timer);
+}
+function finishDuelPresentation(){
+  cancelDuelAnimation();
+  if(!state.resultPending||state.duelPhase==='result')return;
+  state.duelPhase='result';state.duelVisualBall=state.ball;
+  renderAll();
+}
+function animateDuelResult(){
+  if(document.visibilityState==='hidden'||matchMedia('(prefers-reduced-motion: reduce)').matches){finishDuelPresentation();return;}
+  duelLater(()=>{state.duelPhase='reveal';renderAll();},550);
+  duelLater(()=>{
+    const battle=state.battle;
+    state.duelPhase='moving';
+    if(battle.kind==='shot'||battle.fromBall===battle.toBall){finishDuelPresentation();return;}
+    const direction=Math.sign(battle.toBall-battle.fromBall);
+    function step(){
+      state.duelVisualBall+=direction;
+      if(state.duelVisualBall===battle.toBall){finishDuelPresentation();return;}
+      renderMiniField();duelLater(step,180);
+    }
+    step();
+  },1050);
+}
+function nextDuel(){
+  if(!state.resultPending||state.duelPhase!=='result')return;
+  cancelDuelAnimation();
+  state.resultPending=false;state.duelPhase=null;state.duelVisualBall=null;
+  state.showLastResult=false;
+  renderAll();
+}
+function diceFace(value,rolling){
+  if(rolling)return '<div class="battle-die" aria-label="Dado en movimiento">🎲</div>';
+  const positions={1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]}[value]||[];
+  return `<div class="battle-die pip-die" aria-label="Dado: ${value}">${positions.map(pos=>`<span class="pip-dot" style="grid-area:${Math.ceil(pos/3)} / ${(pos-1)%3+1}"></span>`).join('')}</div>`;
+}
+function duelOutcome(battle){
+  if(battle.kind==='shot'){
+    const title=battle.goal?'¡GOOOL!':battle.winner==='home'?'¡PARADÓN!':'¡LO PARA EL RIVAL!';
+    const winner=battle.winner==='home'?battle.home:battle.away;
+    return {title,math:`${battle.result} · ${winner.total} frente a ${battle.winner==='home'?battle.away.total:battle.home.total}`,detail:'El balón vuelve al centro.'};
+  }
+  const diff=Math.abs(battle.home.total-battle.away.total);
+  const steps=Math.abs((battle.toBall??state.ball)-(battle.fromBall??state.ball));
+  if(!battle.winner)return {title:'¡EMPATE!',math:`${battle.home.total} − ${battle.away.total} = 0 · Sin avance`,detail:'El balón no se mueve. Cambia el equipo que inicia.'};
+  const wonHome=battle.winner==='home';
+  const title=wonHome?(battle.initiator==='B'?'¡RECUPERAS EL BALÓN!':'¡GANAS EL DUELO!'):
+    battle.initiator==='A'?'¡LA IA RECUPERA!':'¡GANA EL RIVAL!';
+  const high=Math.max(battle.home.total,battle.away.total),low=Math.min(battle.home.total,battle.away.total);
+  return {title,math:`${high} − ${low} = ${diff} · ${wonHome?'Avanzas':'El rival avanza'} ${steps} ${steps===1?'casilla':'casillas'}`,
+    detail:`${BOARD[battle.fromBall]?.label||'Posición anterior'} → ${BOARD[battle.toBall??state.ball].label}${steps<diff?' · Límite: línea de tiro':''}`};
+}
+function renderBattleResult(arenas){
+  const battle=state.battle;
+  const rolling=state.duelPhase==='rolling';
+  const outcome=duelOutcome(battle);
+  const resultClass=battle.winner||'neutral';
+  const final=state.matchEnded&&!state.resultPending;
+  const portrait=(card,side)=>{
+    const winner=!rolling&&battle.winner===side;
+    const keeperHidden=rolling&&battle.kind==='shot'&&card.statLabel!=='Tiro';
+    return `<div class="battle-side battle-result-card ${side} ${winner?'winner':''}">
+      <div class="battle-photo">${renderBattlePhoto(card)}</div>
+      ${winner?'<span class="winner-tag">GANADOR</span>':''}
+      <div class="battle-name">${card.name}</div>
+      <div class="battle-formula">${keeperHidden?'Portero · azar':card.statLabel||battle.label} ${keeperHidden?'?':isTactical()?tacticalMath(card):card.base} + 🎲 ${rolling?'?':card.roll}</div>
+      <div class="battle-total">${rolling?'?':card.total}</div></div>`;
+  };
+  const next=state.matchEnded?`Final del partido · ${state.score.A} − ${state.score.B}`:
+    state.shotMode?`Siguiente: disparo de ${state.shotAttacker==='A'?state.homeTeam.team_name:state.awayTeam.team_name}`:
+    `Siguiente: ${STAT_LABELS[getCellStat(state.ball)]} · ${state.turn==='A'?'Atacas tú':'Ataca la IA'}`;
+  const html=`<div class="duel-result ${rolling?'rolling':''} ${state.duelPhase==='reveal'?'result-reveal':''}">
+    <div class="battle-title"><strong>${battle.title}</strong><span>${rolling?'TIRANDO DADOS':final?'PARTIDO TERMINADO':'RESULTADO'}</span></div>
+    <div class="battle-versus">${portrait(battle.home,'home')}
+      <div class="battle-center">${diceFace(battle.home.roll,rolling)}<div class="battle-vs">VS</div>${diceFace(battle.away.roll,rolling)}</div>
+      ${portrait(battle.away,'away')}</div>
+    <div class="duel-outcome ${rolling?'rolling':resultClass} ${!rolling&&battle.goal?'goal':''}" role="status" aria-live="polite">
+      <span class="outcome-title">${rolling?'Tirando los dados…':final?'FINAL DEL PARTIDO':outcome.title}</span>
+      <span class="outcome-math">${rolling?'Las cartas están elegidas. Se resuelve el duelo.':final?state.homeTeam.team_name+' '+state.score.A+' − '+state.score.B+' '+state.awayTeam.team_name:outcome.math}</span>
+    </div>
+    <p class="outcome-footnote">${rolling?'Espera al resultado…':outcome.detail+' · '+(battle.effect||'')+' '+next}</p>
+    ${final?'<button class="roll-duel" type="button" onclick="backToMenu()">Volver al menú</button>':
+      `<button class="roll-duel next-duel" type="button" onclick="nextDuel()" ${state.duelPhase==='result'?'':'disabled'}>${rolling?'🎲 Tirando dados…':state.duelPhase==='result'?(state.matchEnded?'Ver final del partido →':'Siguiente jugada →'):'Moviendo el balón…'}</button>`}
+    </div>`;
+  arenas.forEach(arena=>{arena.innerHTML=html;});
+}
+function prepareDuel(){
+  if(isTactical()){prepareTacticalDuel();return;}
+  if(state.matchEnded||state.resultPending)return;
+  const stat=state.shotMode?'tiro':getCellStat(state.ball);
+  if((state.shotMode?state.shotAttacker:state.turn)==='B'){
+    if(!state.pendingCpuCard||state.usedAway.includes(state.pendingCpuCard.id))
+      state.pendingCpuCard=getCpuBestResponse(availableAwayCards(),stat,'B');
+  }
+  const selected=getSelectedCard();
+  if(!state.shotMode&&state.turn==='A'&&selected&&
+    (!state.pendingDefenseCard||state.responseToCardId!==selected.id||state.usedAway.includes(state.pendingDefenseCard.id))){
+    // Respond only AFTER the attack is selected; conserve strong cards if a closer match exists.
+    state.pendingDefenseCard=getCpuBestResponse(availableAwayCards(),stat,'B',selected);
+    state.responseToCardId=selected.id;
+  }
+  if(!selected){state.pendingDefenseCard=null;state.responseToCardId=null;}
+}
+function renderBattle(){
+  const arenas=[$("battleArena"),$("desktopBattleArena")].filter(Boolean);
+  const el=arenas[0];
+  if(!el) return;
+  if(state.battle&&(state.resultPending||state.matchEnded)){renderBattleResult(arenas);return;}
+  const selected=getSelectedCard();
+  const cpuAttacks=(state.shotMode?state.shotAttacker:state.turn)==='B';
+  const stat=state.shotMode?'tiro':getCellStat(state.ball);
+  const home=state.shotMode&&cpuAttacks?state.keeperA:selected;
+  const away=state.shotMode?(cpuAttacks?state.pendingCpuCard:state.keeperB):
+    (cpuAttacks?state.pendingCpuCard:state.pendingDefenseCard);
+  const ready=!state.matchEnded&&(cpuAttacks&&state.shotMode||!!selected)&&!!away;
+  const homeBase=home?(state.shotMode&&cpuAttacks?'?':home[stat]):'—';
+  const awayBase=away?(state.shotMode&&!cpuAttacks?'?':away[stat]):'—';
+  const hint=state.matchEnded?'Partido terminado':state.shotMode?'El atributo del portero se decide al azar al tirar.':
+    cpuAttacks?`${away?.name||'La IA'} ataca · elige tu respuesta en ${STAT_LABELS[stat]}.`:
+    selected?'La IA ha elegido su defensa. Puedes cambiar de jugador antes de tirar.':'Elige tu ataque; después la IA elegirá su defensa.';
+  const portrait=(card,base,side)=>`<div class="battle-side ${side}">
+    <div class="battle-photo">${card?renderBattlePhoto(card):'<span aria-hidden="true">'+(side==='home'?'＋':'?')+'</span>'}</div>
+    <div class="battle-name">${card?.name||(side==='home'?'Elige jugador':'Espera tu ataque')}</div>
+    <div class="battle-formula">${state.shotMode&&((side==='home')===cpuAttacks)?'Portero · azar':STAT_LABELS[stat]||'Partido'}</div>
+    <div class="battle-total">${base??'—'}</div></div>`;
+  const battle=state.battle;
+  const last=battle?`<details class="last-result" ${state.showLastResult?'open':''}>
+    <summary>Última jugada · ${battle.result} · ${battle.detail}</summary>
+    <div style="margin-top:7px">${battle.home.name}: ${isTactical()?tacticalMath(battle.home):battle.home.base} + 🎲 ${battle.home.roll} = <strong>${battle.home.total}</strong><br>
+    ${battle.away.name}: ${isTactical()?tacticalMath(battle.away):battle.away.base} + 🎲 ${battle.away.roll} = <strong>${battle.away.total}</strong></div></details>`:'';
+  const battleHtml=`
+    <div class="battle-title"><strong>${state.matchEnded?'Final del partido':state.shotMode?'Disparo a puerta':'Duelo · '+STAT_LABELS[stat]}</strong><span>${ready?'LISTO PARA TIRAR':cpuAttacks?'ATACA LA IA':'TU ATAQUE'}</span></div>
+    <div class="battle-versus">
+      ${portrait(home,homeBase,'home')}
+      <div class="battle-center"><div class="battle-die">?</div><div class="battle-vs">VS</div><div class="battle-die">?</div></div>
+      ${portrait(away,awayBase,'away')}
+    </div>
+    <p class="duel-hint">${hint}</p>
+    <button type="button" class="roll-duel" onclick="playTurn()" ${ready?'':'disabled'}>🎲 ${state.shotMode?'Tirar dados · disparo':'Tirar dados'}</button>
+    ${selected?`<details class="selected-details"><summary>Atributos de ${selected.name}</summary>${Object.entries(STAT_LABELS).filter(([key])=>selected[key]!=null).map(([key,label])=>label+': '+selected[key]).join(' · ')}</details>`:''}
+    ${last}`;
+  arenas.forEach(arena=>{arena.innerHTML=battleHtml;});
+}
+
+function renderScoreboard(){
+  renderScoreBadge("homeScoreBadge",state.homeTeam,"A");
+  renderScoreBadge("awayScoreBadge",state.awayTeam,"B");
+  const rolling=state.resultPending&&state.duelPhase==='rolling';
+  const score=rolling?state.battle.beforeScore:state.score;
+  $("scoreA").textContent=score.A;
+  $("scoreB").textContent=score.B;
+  $("timeInfo").textContent=`Min ${rolling?state.battle.beforeTime:state.time} · ${(rolling?state.battle.beforeHalf:state.half)===1 ? "1ª parte" : "2ª parte"}`;
+  $("turnInfo").textContent=`Inicia: ${state.turn==="A" ? state.homeTeam.team_name : state.awayTeam.team_name}`;
+  $("actionText").textContent=state.resultPending?(rolling?'Resolviendo el duelo…':duelOutcome(state.battle).title):state.actionText;
+  $("summaryText").innerHTML=state.resultPending?(rolling?'Las cartas permanecen en el duelo.':duelOutcome(state.battle).math):state.summaryText;
+  if(rolling){$("diceTextMain").textContent='Tirando…';$("diceMain").textContent='🎲';}else animateDice();
+
+  const currentCell=BOARD.find(c=>c.key===state.ball);
+  const cellText=currentCell.shoot ? "Línea de tiro" : STAT_LABELS[currentCell.stat];
+  $("ballInfo").textContent=`Balón en ${currentCell.label} · Casilla: ${cellText}`;
+  $("centerInfo").textContent=`Centro variable: ${STAT_LABELS[currentCenterStat]}`;
+  $("myTeamInfo").textContent=`Cartas disponibles: ${availableHomeCards().length}/10 · Cartas usadas: ${state.usedHome.length}/10`;
+  $("rivalInfo").textContent=`Cartas disponibles rival: ${availableAwayCards().length}/10 · Cartas usadas rival: ${state.usedAway.length}/10`;
+}
+
+function renderMiniField(){
+  const el=$("miniField");
+  if(!el) return;
+  const visualBall=state.resultPending?state.duelVisualBall:state.ball;
+  const current=BOARD.find(cell=>cell.key===visualBall);
+  const battle=state.resultPending?state.battle:null;
+  const phase=battle?(state.duelPhase==='rolling'?`Balón en ${BOARD[battle.fromBall].label} · ${battle.label}`:
+    battle.kind==='shot'?'El balón vuelve al centro':battle.fromBall===battle.toBall?'Empate · sin avance':`${BOARD[battle.fromBall].label} → ${BOARD[battle.toBall].label} · ${Math.abs(battle.toBall-battle.fromBall)} casillas`):
+    current?.shoot?"LÍNEA DE TIRO":`${state.turn==="A"?"ATAQUE LOCAL":"ATAQUE RIVAL"} · ${STAT_LABELS[current?.stat]||"JUGADA"}`;
+  // Mirror presentation only: home attacks key 0 (right), CPU key 12 (left).
+  el.innerHTML=`<div class="field-caption">${phase}</div>`+[...BOARD].reverse().map(cell=>{
+    const sub=cell.shoot ? "TIR" : ({ritmo:'RIT',fisico:'FÍS',defensa:'DEF',regate:'REG',pase:'PAS',tiro:'TIR'}[cell.stat]||'');
+    const code=visualBall===cell.key?"⚽":cell.shoot?(cell.key===SHOOT_LINE_B?'TÚ':'IA'):cell.center?"C":cell.label;
+    const positionLabel=cell.shoot?(cell.key===SHOOT_LINE_B?'Tu portería':'Portería rival'):cell.label;
+    const travelled=battle?.kind==='duel'&&state.duelPhase!=='rolling'&&cell.key>=Math.min(battle.fromBall,visualBall)&&cell.key<=Math.max(battle.fromBall,visualBall)&&battle.fromBall!==battle.toBall;
+    return `
+      <div data-cell-key="${cell.key}" class="mini-cell ${cell.shoot ? "shoot" : ""} ${travelled?'travelled':''} ${visualBall===cell.key ? "active" : ""} ${state.duelPhase==='moving'?'ball-step':''}" title="${positionLabel}" aria-label="${positionLabel}: ${sub}${visualBall===cell.key?", balón":""}">
+        <span class="cell-code">${code}</span>
+        <span class="sub">${sub}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderMyCards(){
+  const currentStat=state.shotMode?'tiro':getCellStat(state.ball);
+  const bestValue=currentStat ? bestAvailableStatValue(currentStat) : null;
+  const statClass=(value, statName)=>currentStat===statName && bestValue!==null && value===bestValue ? "stat best" : "stat";
+  const visibleCards=availableHomeCards()
+    .sort((a,b)=>isTactical()?tacticalParts(b,'A').total-tacticalParts(a,'A').total:(Number(b[currentStat])||0)-(Number(a[currentStat])||0));
+
+  if(!visibleCards.length){
+    $("myCards").innerHTML=`<div class="list-item">No quedan cartas disponibles. Se recuperarán cuando se reinicie el mazo.</div>`;
+  } else {
+    $("myCards").innerHTML=visibleCards.map(card=>{
+      const selected=state.selectedCardId===card.id;
+      return `
+        <div class="card horizontal-card ${card[currentStat]===bestValue?'top-value':''} ${selected ? "selected" : ""}" role="button" tabindex="0" aria-pressed="${selected}" aria-label="Seleccionar ${card.name}" onkeydown="if(event.target===this && (event.key==='Enter'||event.key===' ')){event.preventDefault();cardTap(${card.id})}" onclick="cardTap(${card.id})">
+          <div class="player-art">
+            <div class="player-photo">${renderPhoto(card)}</div>
+            <div class="name-overlay">
+              <div class="primary">${card.name}</div>
+              <div class="secondary">${selected ? (state.shotMode ? "Listo para disparar" : "Lista para jugar") : state.homeTeam.team_name}</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="hand-stat"><span>${STAT_LABELS[state.shotMode?'tiro':currentStat]||'Tiro'}</span><strong>${card[state.shotMode?'tiro':currentStat]??card.tiro}</strong></div>
+            <div class="stats">
+              <div class="${statClass(card.ritmo,'ritmo')}"><span>Ritmo</span><strong>${card.ritmo}</strong></div>
+              <div class="${statClass(card.fisico,'fisico')}"><span>Físico</span><strong>${card.fisico}</strong></div>
+              <div class="${statClass(card.defensa,'defensa')}"><span>Defensa</span><strong>${card.defensa}</strong></div>
+              <div class="${statClass(card.regate,'regate')}"><span>Regate</span><strong>${card.regate}</strong></div>
+              <div class="${statClass(card.pase,'pase')}"><span>Pase</span><strong>${card.pase}</strong></div>
+              <div class="${statClass(card.tiro,'tiro')}"><span>Tiro</span><strong>${card.tiro}</strong></div>
+            </div>
+            <button class="play-inline ${selected ? "selected" : ""}" onclick="event.stopPropagation(); cardTap(${card.id})" ${state.matchEnded ? "disabled" : ""}>
+              ${selected ? "✓ Seleccionado" : "Seleccionar"}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  const keeperDefending = state.shotMode && state.shotAttacker==="B" && !state.matchEnded;
+  const keeperStats = [
+    ["parada","Parada",state.keeperA.parada],
+    ["reflejos","Reflejos",state.keeperA.reflejos],
+    ["juego_aereo","Juego aéreo",state.keeperA.juego_aereo],
+    ["uno_contra_uno","Uno contra uno",state.keeperA.uno_contra_uno]
+  ];
+  $("keeperCard").innerHTML=`
+    <div class="card horizontal-card readonly ${keeperDefending ? "selected" : ""}">
+      <div class="player-art">
+        <div class="player-photo">${renderPhoto(state.keeperA)}</div>
+        <div class="name-overlay">
+          <div class="primary">${state.keeperA.name}</div>
+          <div class="secondary">${keeperDefending ? "Defenderá con un atributo al azar" : state.homeTeam.team_name}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          ${keeperStats.map(([,label,val]) => `<div class="stat"><span>${label}</span><strong>${val}</strong></div>`).join("")}
+        </div>
+        <button class="play-inline ${keeperDefending ? "selected" : ""}" ${keeperDefending&&!state.resultPending ? 'onclick="playTurn()"' : "disabled"}>
+          ${keeperDefending ? "Resolver disparo rival" : "No utilizable"}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderRival(){
+  if(isTactical()){
+    $('rivalList').innerHTML=`<div class="list-item">La mano rival está oculta: ${state.tactical.B.hand.length} jugadores y ${state.tactical.B.tactics.length} tácticas. Solo ves la carta y la táctica que revela en el duelo. Mazo: ${state.tactical.B.pile.length} · Descarte: ${state.tactical.B.discard.length}.</div><details class="list-item"><summary>Plantilla pública rival · no indica su mano</summary>${state.awayCards.map(p=>`<p>${p.name} · ${p.role}<br>${Object.entries(STAT_LABELS).map(([stat,label])=>label+' '+p[stat]).join(' · ')}</p>`).join('')}</details>`;return;
+  }
+  const visibleCards=state.awayCards.filter(card => !state.usedAway.includes(card.id));
+
+  if(!visibleCards.length){
+    $("rivalList").innerHTML=`<div class="list-item">Recuperando cartas de campo del rival...</div>`;
+    return;
+  }
+
+  $("rivalList").innerHTML=visibleCards.map(card=>`
+    <div class="card horizontal-card">
+      <div class="player-art">
+        <div class="player-photo">${renderPhoto(card)}</div>
+        <div class="name-overlay">
+          <div class="primary">${card.name}</div>
+          <div class="secondary">${state.awayTeam.team_name}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <div class="stat"><span>Ritmo</span><strong>${card.ritmo}</strong></div>
+          <div class="stat"><span>Físico</span><strong>${card.fisico}</strong></div>
+          <div class="stat"><span>Defensa</span><strong>${card.defensa}</strong></div>
+          <div class="stat"><span>Regate</span><strong>${card.regate}</strong></div>
+          <div class="stat"><span>Pase</span><strong>${card.pase}</strong></div>
+          <div class="stat"><span>Tiro</span><strong>${card.tiro}</strong></div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderField(){
+  $("fieldList").innerHTML=BOARD.map(cell=>`
+    <div class="list-item">
+      <strong>${cell.label}${state.ball===cell.key ? " ⚽" : ""}</strong> · ${cell.shoot ? "Tiro" : STAT_LABELS[cell.stat]}
+    </div>
+  `).join("");
+}
+function renderLog(){
+  $("logList").innerHTML=state.log.map(item=>`<div class="list-item">${item}</div>`).join("");
+}
+
+function autoRestoreDecksIfEmpty(){
+  if(isTactical())return;
+  if(!state.matchEnded && state.homeCards.length && availableHomeCards().length===0){
+    state.usedHome=[];
+    addLog(`${state.homeTeam.team_name} recupera automáticamente sus 10 cartas de campo.`);
+  }
+  if(!state.matchEnded && state.awayCards.length && availableAwayCards().length===0){
+    state.usedAway=[];
+    addLog(`${state.awayTeam.team_name} recupera automáticamente sus 10 cartas de campo.`);
+    if(state.turn==="B" && !state.pendingCpuCard){
+      const stat=getCellStat(state.ball);
+      if(stat) state.pendingCpuCard=getCpuBestResponse(availableAwayCards(), stat);
+    }
+  }
+}
+
+let renderedHandOrderKey=null;
+function renderAll(){
+  if(turnIsResolving)return;
+  const handScroll=$("myCards").scrollLeft;
+  if(!state.resultPending){autoRestoreDecksIfEmpty();prepareDuel();}
+  renderScoreboard();
+  renderMiniField();
+  renderBattle();
+  renderMyCards();
+  $("myCards").classList.toggle('hand-locked',state.resultPending||state.matchEnded);
+  $("myCards").inert=state.resultPending||state.matchEnded;
+  const handOrderKey=`${state.shotMode?'tiro':getCellStat(state.ball)}:${state.time}`;
+  $("myCards").scrollLeft=renderedHandOrderKey===handOrderKey?handScroll:0;
+  renderedHandOrderKey=handOrderKey;
+  renderRival();
+  renderField();
+  renderLog();
+  renderTacticalExtras();
+  persistMatch();
+}
+
+function takeShot(attackerSide, shooter){
+  const keeper=attackerSide==="A" ? state.keeperB : state.keeperA;
+  const roll=d6();
+  state.lastDice=roll;
+  const attackTotal=shooter.tiro+roll;
+  const saveTotal=keeper.parada+keeper.reflejos;
+  addLog(`${attackerSide==="A" ? state.homeTeam.team_name : state.awayTeam.team_name} dispara: ${shooter.name} (${attackTotal}) vs portero (${saveTotal}).`);
+  if(attackTotal>saveTotal){
+    state.score[attackerSide]+=1;
+    state.actionText="¡Gol! El balón vuelve al centro.";
+    state.summaryText=`<span class="${attackerSide==="A" ? "result-home" : "result-away"}">Resultado:</span> ${shooter.name} marca tras superar al portero (${attackTotal} vs ${saveTotal}).`;
+  }else{
+    state.actionText="El portero evita el gol. El balón vuelve al centro.";
+    state.summaryText=`<span class="result-neutral">Resultado:</span> el portero detiene el disparo de ${shooter.name} (${attackTotal} vs ${saveTotal}).`;
+  }
+  state.ball=START_BALL;
+  state.turn=attackerSide==="A" ? "B" : "A";
+}
+
+function advanceTime(){
+  if(state.matchEnded) return;
+  state.time+=3;
+
+  if(state.time===45){
+    state.half=2;
+    if(!isTactical()){state.usedHome=[];state.usedAway=[];}
+    state.selectedCardId=null;
+    state.pendingCpuCard=null;
+    addLog(isTactical()?"DESCANSO: se conservan las manos y los mazos.":"DESCANSO: se restablecen las 10 cartas de campo para ambos equipos.");
+    state.actionText=isTactical()?"Descanso. Se conservan las manos y las tácticas.":"Descanso. Se restablecen todas las cartas de campo.";
+    state.summaryText=isTactical()?"Continúa con tu mano; el descarte se baraja al agotar el mazo.":"Empieza la segunda parte con las 10 cartas disponibles de nuevo.";
+  }
+
+  if(state.time>=90){
+    state.matchEnded=true;
+    state.selectedCardId=null;
+    state.pendingCpuCard=null;
+    addLog(`Final del partido. Resultado: ${state.homeTeam.team_name} ${state.score.A} - ${state.score.B} ${state.awayTeam.team_name}.`);
+    state.actionText=`Partido terminado: ${state.score.A} - ${state.score.B}.`;
+    state.summaryText="Pulsa Reiniciar partido para volver a empezar.";
+  }
+}
+
+function playTurn(){
+  if(state.matchEnded||state.resultPending)return;
+  ensureDeckResetIfNeeded('A');ensureDeckResetIfNeeded('B');prepareDuel();
+  if(!(state.shotMode&&state.shotAttacker==='B')&&!getSelectedCard())return;
+  const before={fromBall:state.ball,beforeScore:{...state.score},beforeTime:state.time,beforeHalf:state.half,
+    initiator:state.shotMode?state.shotAttacker:state.turn};
+  const oldBattle=state.battle;
+  turnIsResolving=true;
+  try{resolveTurn();}finally{turnIsResolving=false;}
+  if(state.battle===oldBattle)return;
+  Object.assign(state.battle,before,{toBall:state.ball});
+  state.resultPending=true;state.duelPhase='rolling';state.duelVisualBall=before.fromBall;
+  cancelDuelAnimation();
+  renderAll();
+  // Keep the result and its action visible even if the hand was scrolled down.
+  requestAnimationFrame(()=>{
+    if(window.innerWidth<900&&!$("gamePanel").classList.contains('hidden'))
+      $("desktopBattleArena").scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest'});
+  });
+  animateDuelResult();
+}
+function resolveTurn(){
+  if(isTactical()){resolveTacticalTurn();return;}
+  if(state.matchEnded) return;
+  ensureDeckResetIfNeeded("A");
+  ensureDeckResetIfNeeded("B");
+  prepareDuel();
+  if(!(state.shotMode&&state.shotAttacker==='B')&&!getSelectedCard())return;
+  state.showLastResult=true;
+  if(!state.shotMode||state.shotAttacker==='B')logCpuDecision(state.turn==='A'&&!state.shotMode?state.pendingDefenseCard:state.pendingCpuCard);
+
+  if(state.shotMode){
+    if(state.shotAttacker==="A"){
+      const shooter=getSelectedCard();
+      if(!shooter) return;
+      if(!state.usedHome.includes(shooter.id)) state.usedHome.push(shooter.id);
+      state.selectedCardId=null;
+      resolveShot(shooter, "A");
+      advanceTime(); renderAll(); return;
+    } else {
+      const shooter=state.pendingCpuCard;
+      if(!state.usedAway.includes(shooter.id)) state.usedAway.push(shooter.id);
+      resolveShot(shooter, "B");
+      advanceTime(); renderAll(); return;
+    }
+  }
+
+  const cellStat=getCellStat(state.ball);
+
+  if(state.turn==="A"){
+    const selectedCard=getSelectedCard();
+    if(!selectedCard) return;
+
+    const cpuCard=state.pendingDefenseCard;
+    const rollPlayer=d6();
+    const rollCpu=d6();
+    state.lastDice=`${rollPlayer}-${rollCpu}`;
+    const playerTotal=selectedCard[cellStat]+rollPlayer;
+    const cpuTotal=cpuCard[cellStat]+rollCpu;
+    const diff=playerTotal-cpuTotal;
+    const move=Math.abs(diff);
+    setDuelBattle(selectedCard,cpuCard,cellStat,rollPlayer,rollCpu,playerTotal,cpuTotal);
+
+    addLog(`Duelo en ${BOARD[state.ball].label}: ${selectedCard.name} (${playerTotal}) vs ${cpuCard.name} (${cpuTotal}).`);
+    state.summaryText=`${STAT_LABELS[cellStat]}: ${selectedCard.name} (${selectedCard[cellStat]} + dado ${rollPlayer} = ${playerTotal}) contra ${cpuCard.name} (${cpuCard[cellStat]} + dado ${rollCpu} = ${cpuTotal}). `;
+    if(!state.usedHome.includes(selectedCard.id)) state.usedHome.push(selectedCard.id);
+    if(!state.usedAway.includes(cpuCard.id)) state.usedAway.push(cpuCard.id);
+    state.selectedCardId=null;
+
+    if(diff===0){
+      state.actionText="Empate en el duelo.";
+      state.summaryText+=`<span class="result-neutral">No hay movimiento.</span> La siguiente jugada la inicia el rival.`;
+      state.turn="B";
+      state.pendingCpuCard=null;
+      advanceTime(); renderAll(); return;
+    }
+
+    const attackingSide=diff>0 ? "A" : "B";
+    state.ball=moveBallTowardShot(state.ball, attackingSide, move);
+
+    if(diff>0){
+      state.summaryText+=`<span class="result-home">Gana ${state.homeTeam.team_name}.</span> El balón avanza ${move} casilla(s) hasta ${BOARD[state.ball].label}.`;
+    }else{
+      state.summaryText+=`<span class="result-away">Gana ${state.awayTeam.team_name}.</span> El balón avanza ${move} casilla(s) hasta ${BOARD[state.ball].label}.`;
+    }
+
+    if(state.ball===SHOOT_LINE_A || state.ball===SHOOT_LINE_B){
+      enterShotMode(attackingSide);
+    }else{
+      state.turn=attackingSide;
+      if(state.turn==="B"){
+        state.pendingCpuCard=null;
+        state.actionText="La IA inicia la próxima jugada. Su carta se revelará al continuar.";
+      }else{
+        state.actionText="Atacas tú. Elige una carta.";
+      }
+    }
+    advanceTime(); renderAll(); return;
+  }
+
+  if(!state.pendingCpuCard){
+    state.pendingCpuCard=getCpuBestResponse(availableAwayCards(), cellStat, "B");
+    state.actionText=`La IA ha revelado ${state.pendingCpuCard.name}.`;
+    state.summaryText=`Casilla actual: ${STAT_LABELS[cellStat]}. Valor base del rival: ${state.pendingCpuCard[cellStat]}. Elige tu respuesta.`;
+    renderAll(); return;
+  }
+
+  const selectedCard=getSelectedCard();
+  if(!selectedCard) return;
+
+  const cpuCard=state.pendingCpuCard;
+  const rollPlayer=d6();
+  const rollCpu=d6();
+  state.lastDice=`${rollPlayer}-${rollCpu}`;
+  const playerTotal=selectedCard[cellStat]+rollPlayer;
+  const cpuTotal=cpuCard[cellStat]+rollCpu;
+  const diff=playerTotal-cpuTotal;
+  const move=Math.abs(diff);
+  setDuelBattle(selectedCard,cpuCard,cellStat,rollPlayer,rollCpu,playerTotal,cpuTotal);
+
+  addLog(`Duelo en ${BOARD[state.ball].label}: ${cpuCard.name} (${cpuTotal}) vs ${selectedCard.name} (${playerTotal}).`);
+  state.summaryText=`${STAT_LABELS[cellStat]}: ${cpuCard.name} (${cpuCard[cellStat]} + dado ${rollCpu} = ${cpuTotal}) contra ${selectedCard.name} (${selectedCard[cellStat]} + dado ${rollPlayer} = ${playerTotal}). `;
+  if(!state.usedHome.includes(selectedCard.id)) state.usedHome.push(selectedCard.id);
+  if(!state.usedAway.includes(cpuCard.id)) state.usedAway.push(cpuCard.id);
+  state.selectedCardId=null;
+  state.pendingCpuCard=null;
+
+  if(diff===0){
+    state.actionText="Empate en el duelo.";
+    state.summaryText+=`<span class="result-neutral">No hay movimiento.</span> Ahora atacas tú.`;
+    state.turn="A";
+    advanceTime(); renderAll(); return;
+  }
+
+  const attackingSide=diff<0 ? "B" : "A";
+  state.ball=moveBallTowardShot(state.ball, attackingSide, move);
+
+  if(diff<0){
+    state.summaryText+=`<span class="result-away">Gana ${state.awayTeam.team_name}.</span> El balón avanza ${move} casilla(s) hasta ${BOARD[state.ball].label}.`;
+  }else{
+    state.summaryText+=`<span class="result-home">Gana ${state.homeTeam.team_name}.</span> Recuperas y avanzas ${move} casilla(s) hasta ${BOARD[state.ball].label}.`;
+  }
+
+  if(state.ball===SHOOT_LINE_A || state.ball===SHOOT_LINE_B){
+    enterShotMode(attackingSide);
+  }else{
+    state.turn=attackingSide;
+    if(state.turn==="B"){
+      state.pendingCpuCard=null;
+      state.actionText="La IA volverá a iniciar. Su carta se revelará al continuar.";
+    }else{
+      state.actionText="Ahora atacas tú. Elige una carta.";
+    }
+  }
+  advanceTime(); renderAll();
+}
+
+function restartMatch(){$('matchMode').value=state.mode||'classic';startMatch()}
+
+function selectCard(id){
+  if(isTactical()&&!tacticalCards('A').some(c=>c.id===id))return;
+  if(state.matchEnded || state.resultPending || state.usedHome.includes(id) || (state.shotMode&&state.shotAttacker==='B')) return;
+  state.selectedCardId=id;
+  state.showLastResult=false;
+  const card=getSelectedCard();
+  if(state.shotMode){
+    state.actionText=`Has elegido a ${card.name} para disparar.`;
+    state.summaryText=`Pulsa Tirar dados en el duelo para ejecutar el disparo.`;
+  } else if(state.turn==="B" && state.pendingCpuCard){
+    const stat=getCellStat(state.ball);
+    state.actionText=`Has elegido ${card.name}.`;
+    state.summaryText=`Tu ${STAT_LABELS[stat]} es ${card[stat]}. Pulsa Tirar dados para responder a ${state.pendingCpuCard.name} (${state.pendingCpuCard[stat]}).`;
+  }else{
+    state.actionText=`Has elegido ${card.name}.`;
+    state.summaryText="La IA elige su defensa. Pulsa Tirar dados en el duelo cuando estés listo.";
+  }
+  renderAll();
+}
+function markOrPlay(id){
+  if(state.matchEnded || state.usedHome.includes(id)) return;
+  selectCard(id);
+}
+function cardTap(id){ markOrPlay(id); }
+function loadDatabaseFromJson(data){
+  if(!data || !Array.isArray(data.teams) || data.teams.length<2) throw new Error("La base debe incluir al menos 2 equipos.");
+  database={
+    database_name:data.database_name||"Base de equipos",
+    teams:data.teams.map((t,idx)=>normalizeTeam(t,`team_${idx+1}`))
+  };
+  $("dbStatus").textContent=`Base cargada: ${database.database_name} · ${database.teams.length} equipos`;
+  populateSelectors();
+  storeValue("database",structuredClone(database)).catch(()=>{});
+}
+
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tabpanel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+    const content=document.querySelector("#gamePanel .content");
+    if(content) content.scrollTop=0;
+    persistMatch();
+  });
+});
+
+$("loadDbBtn").addEventListener("click",()=>$("dbFile").click());
+$("dbFile").addEventListener("change",e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{ loadDatabaseFromJson(JSON.parse(reader.result)); }
+    catch(err){ $("dbStatus").textContent="Error: no se pudo cargar la base JSON."; }
+  };
+  reader.readAsText(file,"utf-8");
+});
+$("resetDbBtn").addEventListener("click",()=>{
+  database=structuredClone(FALLBACK_DB);
+  $("dbStatus").textContent="Base reiniciada a la versión de ejemplo.";
+  populateSelectors();
+  storeValue("database",structuredClone(database)).catch(()=>{});
+  state.homeTeam=null;
+  saveQueue=saveQueue.catch(()=>{}).then(()=>deleteValue("activeMatch"));
+  saveQueue.then(refreshResumeButton).catch(()=>{});
+  try{localStorage.removeItem(QUICK_SAVE);}catch(_){ }
+  rememberScreen('menu');
+});
+$("homeSelect").addEventListener("change",updateSetupPreview);
+$("awaySelect").addEventListener("change",updateSetupPreview);
+$("startMatchBtn").addEventListener("click",startMatch);
+$("backToMenuBtn").addEventListener("click",backToMenu);
+$("restartMatchBtn").addEventListener("click",restartMatch);
+$("resumeMatchBtn").addEventListener("click",resumeSavedMatch);
+
+window.markOrPlay=markOrPlay;
+window.cardTap=cardTap;
+window.playTurn=playTurn;
+async function initializeApp(){
+  try{
+    const savedDatabase=await readValue("database");
+    if(savedDatabase?.teams?.length>=2){
+      database=savedDatabase;
+      $("dbStatus").textContent=`Base guardada: ${database.database_name} · ${database.teams.length} equipos`;
+    }
+  }catch(_){ }
+  populateSelectors();
+  refreshResumeButton();
+  if(savedScreen()==='game'){
+    try{await resumeSavedMatch();}catch(_){ }
+  }
+}
+function saveBeforeLeaving(){finishDuelPresentation();persistMatch();}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveBeforeLeaving();});
+window.addEventListener('pagehide',saveBeforeLeaving);
+// Save navigation/scroll state without rebuilding the interface.
+let scrollSaveTimer;
+document.addEventListener('scroll',()=>{
+  clearTimeout(scrollSaveTimer);scrollSaveTimer=setTimeout(persistMatch,180);
+},true);
+function registerWebMCP(){
+  const context=document.modelContext;
+  if(!context?.registerTool) return;
+  const register=tool=>Promise.resolve(context.registerTool(tool)).catch(()=>{});
+  register({
+    name:"get_match_state",
+    title:"Consultar partido",
+    description:"Devuelve el marcador, minuto, posesión y posición del balón del partido actual.",
+    inputSchema:{type:"object",properties:{},additionalProperties:false},
+    annotations:{readOnlyHint:true,untrustedContentHint:false},
+    execute(){
+      if(!state.homeTeam) return {active:false};
+      return {active:true,home:state.homeTeam.team_name,away:state.awayTeam.team_name,score:state.score,minute:state.time,turn:state.turn,ball:state.ball,ended:state.matchEnded};
+    }
+  });
+  register({
+    name:"start_match",
+    title:"Empezar partido",
+    description:"Inicia un partido nuevo entre dos equipos de la base cargada usando sus índices.",
+    inputSchema:{type:"object",properties:{homeIndex:{type:"integer",minimum:0},awayIndex:{type:"integer",minimum:0}},required:["homeIndex","awayIndex"],additionalProperties:false},
+    annotations:{readOnlyHint:false,untrustedContentHint:false},
+    execute(input){
+      const count=database.teams?.length||0;
+      if(!Number.isInteger(input?.homeIndex)||!Number.isInteger(input?.awayIndex)||input.homeIndex<0||input.awayIndex<0||input.homeIndex>=count||input.awayIndex>=count) throw new Error("Índice de equipo no válido.");
+      $("homeSelect").value=String(input.homeIndex);
+      $("awaySelect").value=String(input.awayIndex);
+      startMatch();
+      return {started:true,home:state.homeTeam.team_name,away:state.awayTeam.team_name};
+    }
+  });
+}
+initializeApp().then(registerWebMCP);
+</script>
+</body>
+</html>

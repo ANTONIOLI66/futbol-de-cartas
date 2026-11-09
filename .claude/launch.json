@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "futbol-cartas",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["editor-preview.cjs"],
+      "port": 4173,
+      "url": "http://127.0.0.1:4173"
+    }
+  ]
+}
