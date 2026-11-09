@@ -5,3 +5,8 @@ node_modules/
 # Documentos privados del traspaso: se quedan solo en local
 CONTEXTO-TRASPASO-*.txt
 work/site/.openai/
+
+# Originales de las bases en la raíz; la copia publicada está en work/site/dist/datos/
+/*.json
+!/package.json
+!/package-lock.json
